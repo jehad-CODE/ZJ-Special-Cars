@@ -30,7 +30,14 @@ import GenerateReports from './components/staff/GenerateReports';
 //auth
 import SignIn from './components/auth/SignIn';
 import SignUp from './components/auth/SignUp'; 
-import SignOut from './components/auth/SignOut'; 
+import SignOut from './components/auth/SignOut'; // Add this import
+
+// Car Category Components
+import Sport from './components/user/menu/sport';
+import Classic from './components/user/menu/classic';
+import HybridElectric from './components/user/menu/hybrid-electric';
+import LifeProduct from './components/user/menu/life-product';
+import CarsAccessories from './components/user/menu/cars-accessories';
 
 const App: React.FC = () => {
   return (
@@ -42,6 +49,11 @@ const App: React.FC = () => {
           <Route path="/" element={<UserDashboard />}>
             <Route index element={<Home />} />
             <Route path="menu" element={<Menu />} />
+            <Route path="menu/sport" element={<Sport />} />
+            <Route path="menu/classic" element={<Classic />} />
+            <Route path="menu/hybrid-electric" element={<HybridElectric />} />
+            <Route path="menu/life-product" element={<LifeProduct />} /> {/* New route */}
+            <Route path="menu/cars-accessories" element={<CarsAccessories />} /> {/* New route */}
             <Route path="sell-your-car" element={<SellYourCar />} />
             <Route path="contact" element={<Contact />} />
             <Route path="about-us" element={<AboutUs />} />
@@ -49,7 +61,7 @@ const App: React.FC = () => {
 
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUp />} />
-          <Route path="/sign-out" element={<SignOut />} /> 
+          <Route path="/sign-out" element={<SignOut />} /> {/* Add the sign-out route */}
 
           {/* Admin Side Routes */}
           <Route path="/admin" element={<AdminDashboard />}>
