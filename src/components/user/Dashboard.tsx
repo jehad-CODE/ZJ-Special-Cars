@@ -75,6 +75,7 @@ const Dashboard: React.FC = () => {
             <Button color="inherit" component={Link} to="/sell-your-car" sx={{ color: 'white', fontWeight: 'bold' }}>Sell Your Car</Button>
             <Button color="inherit" component={Link} to="/contact" sx={{ color: 'white', fontWeight: 'bold' }}>Contact</Button>
             <Button color="inherit" component={Link} to="/sign-in" sx={{ color: 'white', fontWeight: 'bold' }}>Sign In</Button>
+            <Button color="inherit" component={Link} to="/user-profile" sx={{ color: 'white', fontWeight: 'bold' }}>Profile</Button>
           </Box>
 
           <IconButton color="inherit" edge="end" sx={{ display: { xs: 'block', sm: 'none' } }}>
@@ -89,7 +90,7 @@ const Dashboard: React.FC = () => {
 
       {/* Advanced Search Modal */}
       <Modal open={searchOpen} onClose={() => setSearchOpen(false)}>
-        <Paper sx={{ width: 400, p: 3, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'black', boxShadow: 24, borderRadius: 2 }}>
+        <Paper sx={{ width: 400, p: 3, position: 'center', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'black', boxShadow: 24, borderRadius: 2 }}>
           <Typography variant="h6" gutterBottom>Advanced Search</Typography>
           <TextField label="Car Name" fullWidth sx={{ mb: 2 }} />
           <TextField label="Color" fullWidth sx={{ mb: 2 }} />

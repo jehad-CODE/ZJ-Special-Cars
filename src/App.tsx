@@ -11,6 +11,7 @@ import Menu from './components/user/Menu';
 import SellYourCar from './components/user/SellYourCar';
 import Contact from './components/user/Contact';
 import AboutUs from './components/user/AboutUs';
+import UserProfile from './components/user/UserProfile'; // ✅ Corrected import (case-sensitive)
 
 // Admin Side Components
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -27,10 +28,10 @@ import StaffDashboard from './components/staff/StaffDashboard';
 import ManageOrders from './components/staff/ManageOrders';
 import GenerateReports from './components/staff/GenerateReports';
 
-//auth
+// Auth
 import SignIn from './components/auth/SignIn';
-import SignUp from './components/auth/SignUp'; 
-import SignOut from './components/auth/SignOut'; // Add this import
+import SignUp from './components/auth/SignUp';
+import SignOut from './components/auth/SignOut';
 
 // Car Category Components
 import Sport from './components/user/menu/sport';
@@ -52,16 +53,18 @@ const App: React.FC = () => {
             <Route path="menu/sport" element={<Sport />} />
             <Route path="menu/classic" element={<Classic />} />
             <Route path="menu/hybrid-electric" element={<HybridElectric />} />
-            <Route path="menu/life-product" element={<LifeProduct />} /> {/* New route */}
-            <Route path="menu/cars-accessories" element={<CarsAccessories />} /> {/* New route */}
+            <Route path="menu/life-product" element={<LifeProduct />} />
+            <Route path="menu/cars-accessories" element={<CarsAccessories />} />
             <Route path="sell-your-car" element={<SellYourCar />} />
             <Route path="contact" element={<Contact />} />
             <Route path="about-us" element={<AboutUs />} />
+            <Route path="user-profile" element={<UserProfile />} /> {/* ✅ Correct route */}
           </Route>
 
+          {/* Auth Routes */}
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUp />} />
-          <Route path="/sign-out" element={<SignOut />} /> {/* Add the sign-out route */}
+          <Route path="/sign-out" element={<SignOut />} />
 
           {/* Admin Side Routes */}
           <Route path="/admin" element={<AdminDashboard />}>
