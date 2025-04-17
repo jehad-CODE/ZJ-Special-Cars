@@ -1,77 +1,53 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, Link, InputAdornment } from '@mui/material';
-import { AccountCircle, Email, Lock } from '@mui/icons-material';
+import { Box, Typography, TextField, Button, Link, InputAdornment, AppBar, Toolbar, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { AccountCircle, Email, Lock, Phone, Home } from '@mui/icons-material';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import { useNavigate } from 'react-router-dom';
-import { AppBar, Toolbar, IconButton } from '@mui/material'; // AppBar and Toolbar for consistent navbar
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'; // Car Icon for navbar
-import HomeIcon from '@mui/icons-material/Home'; // Home Icon for navbar
 
 const SignUp: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    navigate('/auth/sign-in');
+    navigate('/sign-in');
   };
 
   return (
     <Box sx={{ height: '100vh', overflow: 'hidden' }}>
-      {/* Navbar */}
-      <AppBar
-        position="fixed"
-        sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          backgroundColor: '#1e1e1e',
-          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.5)',
-        }}
-      >
+      <AppBar position="fixed" sx={{ backgroundColor: '#1e1e1e', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.5)' }}>
         <Toolbar>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {/* Car Icon */}
-            <DirectionsCarIcon sx={{ color: '#ffeb3b', fontSize: '40px', marginRight: '10px' }} />
-            {/* Brand Name */}
-            <Typography
-              variant="h6"
-              component="div"
-              sx={{
-                fontWeight: 'bold',
-                color: '#ffeb3b', // Yellow color for the brand name
-                fontSize: '1.5rem',
-              }}
-            >
-              ZJ SPECIAL CARS
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <DirectionsCarIcon sx={{ color: '#ffeb3b', fontSize: isMobile ? '30px' : '40px', mr: 1 }} />
+            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#ffeb3b', fontSize: isMobile ? '1.2rem' : '1.5rem' }}>
+              {isMobile ? 'ZJ CARS' : 'ZJ SPECIAL CARS'}
             </Typography>
           </Box>
-
-          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'right' }}>
-            <IconButton
-              color="inherit"
-              onClick={() => navigate('/')}
-              sx={{ mx: 2 }}
-            >
-              <HomeIcon sx={{ color: 'white' }} />
+          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-end' }}>
+            <IconButton color="inherit" onClick={() => navigate('/')} sx={{ mx: 1 }}>
+              <Home sx={{ color: 'white' }} />
             </IconButton>
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* Main Content */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          backgroundImage: `url('src/assets/Login.jpg')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          marginTop: '64px',
-        }}
-      >
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        backgroundImage: `url('src/assets/Login.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        pt: '64px',
+        px: isMobile ? 2 : 0
+      }}>
         <Box
           component="form"
           onSubmit={handleSubmit}
@@ -80,14 +56,16 @@ const SignUp: React.FC = () => {
             flexDirection: 'column',
             alignItems: 'center',
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            padding: 4,
+            p: isMobile ? 3 : 4,
             borderRadius: 3,
             boxShadow: '0px 4px 10px rgba(255, 200, 0, 0.5)',
             width: '100%',
             maxWidth: '400px',
+            maxHeight: isMobile ? '90vh' : 'auto',
+            overflowY: isMobile ? 'auto' : 'visible'
           }}
         >
-          <Typography variant="h4" gutterBottom sx={{ color: '#FFD700', fontWeight: 'bold' }}>
+          <Typography variant="h4" gutterBottom sx={{ color: '#FFD700', fontWeight: 'bold', fontSize: isMobile ? '1.75rem' : '2.25rem' }}>
             Sign Up
           </Typography>
 
@@ -101,11 +79,7 @@ const SignUp: React.FC = () => {
             required
             sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
             InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <AccountCircle sx={{ color: '#FFC107' }} />
-                </InputAdornment>
-              ),
+              startAdornment: <InputAdornment position="start"><AccountCircle sx={{ color: '#FFC107' }} /></InputAdornment>,
             }}
           />
 
@@ -119,11 +93,7 @@ const SignUp: React.FC = () => {
             required
             sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
             InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Email sx={{ color: '#FFC107' }} />
-                </InputAdornment>
-              ),
+              startAdornment: <InputAdornment position="start"><Email sx={{ color: '#FFC107' }} /></InputAdornment>,
             }}
           />
 
@@ -137,11 +107,21 @@ const SignUp: React.FC = () => {
             required
             sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
             InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Lock sx={{ color: '#FFC107' }} />
-                </InputAdornment>
-              ),
+              startAdornment: <InputAdornment position="start"><Lock sx={{ color: '#FFC107' }} /></InputAdornment>,
+            }}
+          />
+
+          <TextField
+            label="Phone Number"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            fullWidth
+            margin="normal"
+            required
+            sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><Phone sx={{ color: '#FFC107' }} /></InputAdornment>,
             }}
           />
 
@@ -160,13 +140,13 @@ const SignUp: React.FC = () => {
             Sign Up
           </Button>
 
-          <Typography variant="body2" sx={{ color: '#fff' }}>
+          <Typography variant="body2" sx={{ color: '#fff', mt: 2 }}>
             Already have an account?{' '}
             <Link
               component="button"
               onClick={() => navigate('/sign-in')}
               underline="hover"
-              sx={{ color: '#FFD700', fontWeight: 'bold', cursor: 'pointer' }}
+              sx={{ color: '#FFD700', fontWeight: 'bold' }}
             >
               Sign In
             </Link>

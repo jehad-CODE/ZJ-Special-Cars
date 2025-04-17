@@ -11,15 +11,14 @@ import Menu from './components/user/Menu';
 import SellYourCar from './components/user/SellYourCar';
 import Contact from './components/user/Contact';
 import AboutUs from './components/user/AboutUs';
-import UserProfile from './components/user/UserProfile'; // ✅ Corrected import (case-sensitive)
+import UserProfile from './components/user/UserProfile'; 
 
 // Admin Side Components
-import AdminDashboard from './components/admin/AdminDashboard';
+import AdminDashboard from './components/admin/AdminDashboard.tsx';
 import ManageCars from './components/admin/ManageCars';
 import ManageUsers from './components/admin/ManageUsers';
 import ManageAccessories from './components/admin/ManageAccessories';
 import ReviewCarSubmissions from './components/admin/ReviewCarSubmissions';
-import TrackPurchases from './components/admin/TrackPurchases';
 import ManageDelivery from './components/admin/ManageDelivery';
 import CheckPaymentStatus from './components/admin/CheckPaymentStatus';
 
@@ -72,7 +71,6 @@ const App: React.FC = () => {
             <Route path="manage-users" element={<ManageUsers />} />
             <Route path="manage-accessories" element={<ManageAccessories />} />
             <Route path="review-car-submissions" element={<ReviewCarSubmissions />} />
-            <Route path="track-purchases" element={<TrackPurchases />} />
             <Route path="manage-delivery" element={<ManageDelivery />} />
             <Route path="check-payment-status" element={<CheckPaymentStatus />} />
           </Route>

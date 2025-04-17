@@ -20,7 +20,6 @@ const Home: React.FC = () => {
         paddingTop: 4, // Add some padding at the top
       }}
     >
-      {/* About Us Section (Top Center) */}
       <Box
         sx={{
           width: '55%', // Take up 70% of the width
