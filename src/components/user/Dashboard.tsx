@@ -3,7 +3,6 @@ import { Outlet, Link } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Box, IconButton, TextField, Menu, MenuItem, Modal, Paper, InputAdornment } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import CloseIcon from '@mui/icons-material/Close';
 
 const Dashboard: React.FC = () => {

@@ -19,13 +19,14 @@ import ManageCars from './components/admin/ManageCars';
 import ManageUsers from './components/admin/ManageUsers';
 import ManageAccessories from './components/admin/ManageAccessories';
 import ReviewCarSubmissions from './components/admin/ReviewCarSubmissions';
-import ManageDelivery from './components/admin/ManageDelivery';
 import CheckPaymentStatus from './components/admin/CheckPaymentStatus';
+import AdminProfile from './components/admin/AdminProfile'; // Added AdminProfile import
 
 // Staff Side Components
 import StaffDashboard from './components/staff/StaffDashboard';
 import ManageOrders from './components/staff/ManageOrders';
 import GenerateReports from './components/staff/GenerateReports';
+import ManageDelivery from './components/staff/ManageDelivery'; // Moved to staff imports
 
 // Auth
 import SignIn from './components/auth/SignIn';
@@ -57,7 +58,7 @@ const App: React.FC = () => {
             <Route path="sell-your-car" element={<SellYourCar />} />
             <Route path="contact" element={<Contact />} />
             <Route path="about-us" element={<AboutUs />} />
-            <Route path="user-profile" element={<UserProfile />} /> {/* ✅ Correct route */}
+            <Route path="user-profile" element={<UserProfile />} />
           </Route>
 
           {/* Auth Routes */}
@@ -71,8 +72,8 @@ const App: React.FC = () => {
             <Route path="manage-users" element={<ManageUsers />} />
             <Route path="manage-accessories" element={<ManageAccessories />} />
             <Route path="review-car-submissions" element={<ReviewCarSubmissions />} />
-            <Route path="manage-delivery" element={<ManageDelivery />} />
             <Route path="check-payment-status" element={<CheckPaymentStatus />} />
+            <Route path="admin-profile" element={<AdminProfile />} /> {/* Added AdminProfile route */}
           </Route>
 
           {/* Staff Side Routes */}

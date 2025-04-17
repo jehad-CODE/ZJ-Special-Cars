@@ -1,252 +1,313 @@
 import React, { useState } from 'react';
-import { Box, Button, Typography } from '@mui/material';
-import { Dashboard, CarRepair, PeopleAlt, AddCircle, Settings, ShoppingCart, Payment } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
+import { 
+  Box, Button, Typography, useMediaQuery, useTheme, 
+  Drawer, IconButton, Divider, Avatar
+} from '@mui/material';
+import { 
+  Dashboard, CarRepair, PeopleAlt, AddCircle, 
+  Settings, Payment, Menu, Close, Person
+} from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import Logout from '@mui/icons-material/Logout';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 
 // Example Pages for Admin
 import ManageCars from './ManageCars';
 import ManageUsers from './ManageUsers';
 import ManageAccessories from './ManageAccessories';
 import ReviewCarSubmissions from './ReviewCarSubmissions';
-import TrackPurchases from './TrackPurchases';
-import ManageDelivery from './ManageDelivery';
 import CheckPaymentStatus from './CheckPaymentStatus';
+import AdminProfile from './AdminProfile'; 
 
 const AdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('ManageUsers');
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      {/* Top Nav */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', backgroundColor:'#333'}}>
-        {/* Car Icon */}
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <DirectionsCarIcon sx={{ color: '#ffeb3b', fontSize: '40px', marginRight: '10px' }} />
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              fontWeight: 'bold',
-              color: '#ffeb3b',
-              fontSize: '1.5rem',
-            }}
-          >
-            ZJ SPECIAL CARS
-          </Typography>
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const handleNavClick = (section: string) => {
+    setActiveSection(section);
+    if (isMobile) {
+      setMobileOpen(false);
+    }
+  };
+
+  const drawerContent = (
+    <Box sx={{
+      height: '100%',
+      backgroundColor: '#222', // Darker grey for drawer background
+      color: 'white',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      {isMobile && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
+          <IconButton onClick={handleDrawerToggle} sx={{ color: 'white' }}>
+            <Close />
+          </IconButton>
         </Box>
+      )}
+      
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 3 }}>
+        <Avatar sx={{ width: 60, height: 60, bgcolor: '#ffeb3b', color: '#333', mb: 1 }}>
+          <Person fontSize="large" />
+        </Avatar>
+        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Admin Panel</Typography>
+      </Box>
+      
+      <Divider sx={{ bgcolor: 'rgba(255,255,255,0.1)', my: 1 }} />
 
-        {/* Sign Out Button (Top-Right of the Top Bar) */}
-        <IconButton
-          component={Link}
-          to="/sign-in" // Redirect to sign-in page
+      <Box sx={{ display: 'flex', flexDirection: 'column', p: 2, flex: 1, overflowY: 'auto' }}>
+        <Button
+          onClick={() => handleNavClick('ManageUsers')}
           sx={{
             color: 'white',
-            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+            width: '100%',
+            margin: '6px 0',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            transition: 'all 0.3s ease',
+            backgroundColor: activeSection === 'ManageUsers' ? '#444' : 'transparent',
+            '&:hover': {
+              backgroundColor: '#444',
+              transform: isMobile ? 'none' : 'translateX(8px)',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '12px',
           }}
+          startIcon={<PeopleAlt sx={{ fontSize: 24, color: '#ffb6b9' }} />}
         >
-          <Logout sx={{ color: 'white' }} />
-        </IconButton>
+          <Typography variant="body1" sx={{ fontSize: '15px' }}>Manage Users</Typography>
+        </Button>
+
+        <Button
+          onClick={() => handleNavClick('ManageCars')}
+          sx={{
+            color: 'white',
+            width: '100%',
+            margin: '6px 0',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            transition: 'all 0.3s ease',
+            backgroundColor: activeSection === 'ManageCars' ? '#444' : 'transparent',
+            '&:hover': {
+              backgroundColor: '#444',
+              transform: isMobile ? 'none' : 'translateX(8px)',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '12px',
+          }}
+          startIcon={<CarRepair sx={{ fontSize: 24, color: '#86c232' }} />}
+        >
+          <Typography variant="body1" sx={{ fontSize: '15px' }}>Manage Cars</Typography>
+        </Button>
+
+        <Button
+          onClick={() => handleNavClick('ManageAccessories')}
+          sx={{
+            color: 'white',
+            width: '100%',
+            margin: '6px 0',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            transition: 'all 0.3s ease',
+            backgroundColor: activeSection === 'ManageAccessories' ? '#444' : 'transparent',
+            '&:hover': {
+              backgroundColor: '#444',
+              transform: isMobile ? 'none' : 'translateX(8px)',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '12px',
+          }}
+          startIcon={<AddCircle sx={{ fontSize: 24, color: '#ff6347' }} />}
+        >
+          <Typography variant="body1" sx={{ fontSize: '15px' }}>Manage Accessories</Typography>
+        </Button>
+
+        <Button
+          onClick={() => handleNavClick('ReviewCarSubmissions')}
+          sx={{
+            color: 'white',
+            width: '100%',
+            margin: '6px 0',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            transition: 'all 0.3s ease',
+            backgroundColor: activeSection === 'ReviewCarSubmissions' ? '#444' : 'transparent',
+            '&:hover': {
+              backgroundColor: '#444',
+              transform: isMobile ? 'none' : 'translateX(8px)',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '12px',
+          }}
+          startIcon={<Dashboard sx={{ fontSize: 24, color: '#32cd32' }} />}
+        >
+          <Typography variant="body1" sx={{ fontSize: '15px' }}>Review Submissions</Typography>
+        </Button>
+
+        <Button
+          onClick={() => handleNavClick('CheckPaymentStatus')}
+          sx={{
+            color: 'white',
+            width: '100%',
+            margin: '6px 0',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            transition: 'all 0.3s ease',
+            backgroundColor: activeSection === 'CheckPaymentStatus' ? '#444' : 'transparent',
+            '&:hover': {
+              backgroundColor: '#444',
+              transform: isMobile ? 'none' : 'translateX(8px)',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '12px',
+          }}
+          startIcon={<Payment sx={{ fontSize: 24, color: '#f39c12' }} />}
+        >
+          <Typography variant="body1" sx={{ fontSize: '15px' }}>Check Payments</Typography>
+        </Button>
+
+        <Button
+          onClick={() => handleNavClick('AdminProfile')}
+          sx={{
+            color: 'white',
+            width: '100%',
+            margin: '6px 0',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            transition: 'all 0.3s ease',
+            backgroundColor: activeSection === 'AdminProfile' ? '#444' : 'transparent',
+            '&:hover': {
+              backgroundColor: '#444',
+              transform: isMobile ? 'none' : 'translateX(8px)',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '12px',
+          }}
+          startIcon={<Settings sx={{ fontSize: 24, color: '#8e44ad' }} />}
+        >
+          <Typography variant="body1" sx={{ fontSize: '15px' }}>Admin Profile</Typography>
+        </Button>
+      </Box>
+      
+      
+    </Box>
+  );
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#1a1a1a' }}>
+      {/* Top Nav */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        padding: '10px', 
+        backgroundColor: '#222'
+      }}>
+        {/* Logo */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box 
+            component="img"
+            src="/src/assets/ZJlogo.png"
+            alt="ZJ Special Cars Logo"
+            sx={{ 
+              height: { xs: 40, sm: 50 },
+              mr: 1
+            }}
+          />
+        </Box>
+
+        {/* Mobile Menu Toggle */}
+        {isMobile && (
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ color: 'white' }}
+          >
+            <Menu />
+          </IconButton>
+        )}
+
+        {!isMobile && (
+          <IconButton
+            component={Link}
+            to="/sign-in"
+            sx={{
+              color: 'white',
+              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+            }}
+          >
+            <Logout />
+          </IconButton>
+        )}
       </Box>
 
       {/* Main Body */}
-      <Box sx={{ display: 'flex', flex: 1 }}>
-        {/* Sidebar */}
-        <Box sx={{
-          width: '300px',
-          backgroundColor: '#333',
-          color: 'white',
-          display: 'flex',
-          flexDirection: 'column',
-          paddingTop: '20px',
+      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Sidebar - Desktop Permanent, Mobile Temporary */}
+        {isMobile ? (
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={handleDrawerToggle}
+            ModalProps={{ keepMounted: true }}
+            sx={{
+              '& .MuiDrawer-paper': { 
+                width: 280,
+                boxShadow: '4px 0 10px rgba(0,0,0,0.5)',
+              },
+            }}
+          >
+            {drawerContent}
+          </Drawer>
+        ) : (
+          <Box sx={{ 
+            width: 280,
+            flexShrink: 0,
+            height: 'calc(100vh - 70px)', 
+          }}>
+            {drawerContent}
+          </Box>
+        )}
+
+        {/* Content Area */}
+        <Box sx={{ 
+          flexGrow: 1, 
+          p: { xs: 1, sm: 2, md: 3 },
+          overflow: 'auto', 
+          height: 'calc(100vh - 70px)',
+          backgroundColor: '#1e1e1e'
         }}>
-          <Button
-            onClick={() => setActiveSection('ManageUsers')}
-            sx={{
-              color: 'white',
-              width: '100%',
-              margin: '10px 0',
-              padding: '15px 20px',
-              borderRadius: '10px',
-              transition: 'all 0.3s ease',
-              backgroundColor: activeSection === 'ManageUsers' ? '#555' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#555',
-                transform: 'translateX(10px)',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-              },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: '15px',
-            }}
-            startIcon={<PeopleAlt sx={{ fontSize: 30, color: '#ffb6b9' }} />}
-          >
-            <Typography variant="body1" sx={{ fontSize: '16px' }}>Manage Users</Typography>
-          </Button>
-
-          <Button
-            onClick={() => setActiveSection('ManageCars')}
-            sx={{
-              color: 'white',
-              width: '100%',
-              margin: '10px 0',
-              padding: '15px 20px',
-              borderRadius: '10px',
-              transition: 'all 0.3s ease',
-              backgroundColor: activeSection === 'ManageCars' ? '#555' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#555',
-                transform: 'translateX(10px)',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-              },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: '15px',
-            }}
-            startIcon={<CarRepair sx={{ fontSize: 30, color: '#86c232' }} />}
-          >
-            <Typography variant="body1" sx={{ fontSize: '16px' }}>Manage Cars</Typography>
-          </Button>
-
-          <Button
-            onClick={() => setActiveSection('ManageAccessories')}
-            sx={{
-              color: 'white',
-              width: '100%',
-              margin: '10px 0',
-              padding: '15px 20px',
-              borderRadius: '10px',
-              transition: 'all 0.3s ease',
-              backgroundColor: activeSection === 'ManageAccessories' ? '#555' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#555',
-                transform: 'translateX(10px)',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-              },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: '15px',
-            }}
-            startIcon={<AddCircle sx={{ fontSize: 30, color: '#ff6347' }} />}
-          >
-            <Typography variant="body1" sx={{ fontSize: '16px' }}>Manage Accessories</Typography>
-          </Button>
-
-          <Button
-            onClick={() => setActiveSection('ReviewCarSubmissions')}
-            sx={{
-              color: 'white',
-              width: '100%',
-              margin: '10px 0',
-              padding: '15px 20px',
-              borderRadius: '10px',
-              transition: 'all 0.3s ease',
-              backgroundColor: activeSection === 'ReviewCarSubmissions' ? '#555' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#555',
-                transform: 'translateX(10px)',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-              },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: '15px',
-            }}
-            startIcon={<Dashboard sx={{ fontSize: 30, color: '#32cd32' }} />}
-          >
-            <Typography variant="body1" sx={{ fontSize: '16px' }}>Review Car Submissions</Typography>
-          </Button>
-
-          <Button
-            onClick={() => setActiveSection('TrackPurchases')}
-            sx={{
-              color: 'white',
-              width: '100%',
-              margin: '10px 0',
-              padding: '15px 20px',
-              borderRadius: '10px',
-              transition: 'all 0.3s ease',
-              backgroundColor: activeSection === 'TrackPurchases' ? '#555' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#555',
-                transform: 'translateX(10px)',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-              },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: '15px',
-            }}
-            startIcon={<ShoppingCart sx={{ fontSize: 30, color: '#add8e6' }} />}
-          >
-            <Typography variant="body1" sx={{ fontSize: '16px' }}>Track Purchases</Typography>
-          </Button>
-
-          <Button
-            onClick={() => setActiveSection('CheckPaymentStatus')}
-            sx={{
-              color: 'white',
-              width: '100%',
-              margin: '10px 0',
-              padding: '15px 20px',
-              borderRadius: '10px',
-              transition: 'all 0.3s ease',
-              backgroundColor: activeSection === 'CheckPaymentStatus' ? '#555' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#555',
-                transform: 'translateX(10px)',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-              },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: '15px',
-            }}
-            startIcon={<Payment sx={{ fontSize: 30, color: '#f39c12' }} />}
-          >
-            <Typography variant="body1" sx={{ fontSize: '16px' }}>Check Payment Status</Typography>
-          </Button>
-
-          <Button
-            onClick={() => setActiveSection('ManageDelivery')}
-            sx={{
-              color: 'white',
-              width: '100%',
-              margin: '10px 0',
-              padding: '15px 20px',
-              borderRadius: '10px',
-              transition: 'all 0.3s ease',
-              backgroundColor: activeSection === 'ManageDelivery' ? '#555' : 'transparent',
-              '&:hover': {
-                backgroundColor: '#555',
-                transform: 'translateX(10px)',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-              },
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: '15px',
-            }}
-            startIcon={<Settings sx={{ fontSize: 30, color: '#8e44ad' }} />}
-          >
-            <Typography variant="body1" sx={{ fontSize: '16px' }}>Manage Delivery</Typography>
-          </Button>
-        </Box>
-
-        {/* Content Area (Right Side) */}
-        <Box sx={{ flexGrow: 1, padding: 2 }}>
           {activeSection === 'ManageUsers' && <ManageUsers />}
           {activeSection === 'ManageCars' && <ManageCars />}
           {activeSection === 'ManageAccessories' && <ManageAccessories />}
           {activeSection === 'ReviewCarSubmissions' && <ReviewCarSubmissions />}
-          {activeSection === 'TrackPurchases' && <TrackPurchases />}
           {activeSection === 'CheckPaymentStatus' && <CheckPaymentStatus />}
-          {activeSection === 'ManageDelivery' && <ManageDelivery />}
+          {activeSection === 'AdminProfile' && <AdminProfile />}
         </Box>
       </Box>
     </Box>
