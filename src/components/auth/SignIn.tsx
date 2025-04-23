@@ -1,29 +1,67 @@
 import React, { useState } from 'react';
 import { Box, Typography, TextField, Button, Link, InputAdornment, AppBar, Toolbar, IconButton, useMediaQuery, useTheme } from '@mui/material';
-import { Person, Lock, Home } from '@mui/icons-material';
+import { Email, Lock, Home } from '@mui/icons-material';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'; 
 import { useNavigate } from 'react-router-dom';
 
 const SignIn: React.FC = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    let role = 'user'; 
-    if (username.toLowerCase() === 'admin') {
-      role = 'admin';
-      navigate('/admin'); 
-    } else if (username.toLowerCase() === 'staff') {
-      role = 'staff';
-      navigate('/staff'); 
-    } else {
-      navigate('/'); 
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Store the token and complete user info
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('role', data.user.role);
+        localStorage.setItem('username', data.user.username);
+        localStorage.setItem('email', data.user.email);
+        localStorage.setItem('phone', data.user.phone);
+        localStorage.setItem('userId', data.user.id);
+        
+        // Navigate based on role
+        switch(data.user.role) {
+          case 'admin':
+            navigate('/admin');
+            break;
+          case 'staff':
+            navigate('/staff');
+            break;
+          default:
+            navigate('/');
+        }
+      } else {
+        setError(data.message || 'Invalid credentials');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setError('Connection error. Please try again later.');
+    } finally {
+      setIsLoading(false);
     }
-    localStorage.setItem('role', role);
   };
 
   return (
@@ -75,17 +113,24 @@ const SignIn: React.FC = () => {
             Sign In
           </Typography>
 
+          {error && (
+            <Typography variant="body2" sx={{ color: '#f44336', mb: 2, textAlign: 'center' }}>
+              {error}
+            </Typography>
+          )}
+
           <TextField
-            label="Username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             fullWidth
             margin="normal"
             required
+            disabled={isLoading}
             sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
             InputProps={{
-              startAdornment: <InputAdornment position="start"><Person sx={{ color: '#FFC107' }} /></InputAdornment>,
+              startAdornment: <InputAdornment position="start"><Email sx={{ color: '#FFC107' }} /></InputAdornment>,
             }}
           />
 
@@ -97,6 +142,7 @@ const SignIn: React.FC = () => {
             fullWidth
             margin="normal"
             required
+            disabled={isLoading}
             sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
             InputProps={{
               startAdornment: <InputAdornment position="start"><Lock sx={{ color: '#FFC107' }} /></InputAdornment>,
@@ -107,6 +153,7 @@ const SignIn: React.FC = () => {
             type="submit"
             variant="contained"
             fullWidth
+            disabled={isLoading}
             sx={{
               mt: 3,
               backgroundColor: '#FFC107',
@@ -115,7 +162,7 @@ const SignIn: React.FC = () => {
               '&:hover': { backgroundColor: '#FFD54F' },
             }}
           >
-            Sign In
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </Button>
 
           <Typography variant="body2" sx={{ color: '#fff', mt: 2 }}>
@@ -124,6 +171,7 @@ const SignIn: React.FC = () => {
               component="button"
               onClick={() => navigate('/sign-up')}
               underline="hover"
+              disabled={isLoading}
               sx={{ color: '#FFD700', fontWeight: 'bold' }}
             >
               Sign Up

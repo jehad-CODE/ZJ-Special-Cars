@@ -1,21 +1,45 @@
-import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, Paper, Avatar, Grid, useMediaQuery, useTheme, Snackbar, Alert } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, TextField, Button, Paper, Avatar, Grid, useMediaQuery, useTheme, Snackbar, Alert, CircularProgress } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
+import { useNavigate } from 'react-router-dom';
 
 const UserProfile: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
   
-  const [name, setName] = useState('Jehad Shaheen');
-  const [email, setEmail] = useState('jehad@example.com');
-  const [phone, setPhone] = useState('+966 502 666 898');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState('');
 
-  const handleSave = () => {
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/sign-in');
+      return;
+    }
+
+    // Get user data from localStorage
+    const username = localStorage.getItem('username') || '';
+    const userEmail = localStorage.getItem('email') || '';
+    const userPhone = localStorage.getItem('phone') || '';
+    const id = localStorage.getItem('userId') || '';
+
+    setName(username);
+    setEmail(userEmail);
+    setPhone(userPhone);
+    setUserId(id);
+  }, [navigate]);
+
+  const handleSave = async () => {
     // Basic validation
     if (password && password !== confirmPassword) {
       setErrorMessage("Passwords don't match");
@@ -23,13 +47,61 @@ const UserProfile: React.FC = () => {
       return;
     }
     
-    // TODO: Connect to backend API to update user profile
-    setSnackbarOpen(true);
-    setErrorMessage('');
-    
-    // Reset password fields after successful update
-    setPassword('');
-    setConfirmPassword('');
+    setLoading(true);
+
+    try {
+      // Prepare data for update
+      const updateData: any = {
+        username: name,
+        email,
+        phone
+      };
+
+      // Only include password if it's being changed
+      if (password) {
+        updateData.password = password;
+      }
+
+      // Get token for authorization
+      const token = localStorage.getItem('token');
+
+      // Make API call to update user profile
+      const response = await fetch(`http://localhost:5000/api/auth/update-profile/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token || ''
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update localStorage with new user data
+        localStorage.setItem('username', name);
+        localStorage.setItem('email', email);
+        localStorage.setItem('phone', phone);
+        
+        // Show success message
+        setErrorMessage('');
+        setSnackbarOpen(true);
+        
+        // Reset password fields after successful update
+        setPassword('');
+        setConfirmPassword('');
+      } else {
+        // Show error message
+        setErrorMessage(data.message || 'Failed to update profile');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setErrorMessage('Something went wrong. Please try again later.');
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,7 +144,7 @@ const UserProfile: React.FC = () => {
               mb: 2
             }}
           >
-            {name.split(' ').map(n => n[0]).join('')}
+            {name ? name.split(' ').map(n => n[0]).join('') : ''}
           </Avatar>
           <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'white' }}>
             User Profile
@@ -227,11 +299,12 @@ const UserProfile: React.FC = () => {
           variant="contained" 
           fullWidth 
           onClick={handleSave}
+          disabled={loading}
           sx={{ mt: 4 }}
-          startIcon={<SaveIcon />}
+          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           size="large"
         >
-          Save Changes
+          {loading ? 'Saving...' : 'Save Changes'}
         </Button>
         
         <Snackbar

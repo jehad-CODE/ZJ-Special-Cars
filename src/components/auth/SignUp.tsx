@@ -9,13 +9,45 @@ const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    navigate('/sign-in');
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          phone
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert('Registration successful! Please sign in.');
+        navigate('/sign-in');
+      } else {
+        setError(data.message || 'Registration failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setError('Connection error. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -69,6 +101,12 @@ const SignUp: React.FC = () => {
             Sign Up
           </Typography>
 
+          {error && (
+            <Typography variant="body2" sx={{ color: '#f44336', mb: 2, textAlign: 'center' }}>
+              {error}
+            </Typography>
+          )}
+
           <TextField
             label="Username"
             type="text"
@@ -77,6 +115,7 @@ const SignUp: React.FC = () => {
             fullWidth
             margin="normal"
             required
+            disabled={isLoading}
             sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
             InputProps={{
               startAdornment: <InputAdornment position="start"><AccountCircle sx={{ color: '#FFC107' }} /></InputAdornment>,
@@ -91,6 +130,7 @@ const SignUp: React.FC = () => {
             fullWidth
             margin="normal"
             required
+            disabled={isLoading}
             sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
             InputProps={{
               startAdornment: <InputAdornment position="start"><Email sx={{ color: '#FFC107' }} /></InputAdornment>,
@@ -105,6 +145,7 @@ const SignUp: React.FC = () => {
             fullWidth
             margin="normal"
             required
+            disabled={isLoading}
             sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
             InputProps={{
               startAdornment: <InputAdornment position="start"><Lock sx={{ color: '#FFC107' }} /></InputAdornment>,
@@ -119,6 +160,7 @@ const SignUp: React.FC = () => {
             fullWidth
             margin="normal"
             required
+            disabled={isLoading}
             sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
             InputProps={{
               startAdornment: <InputAdornment position="start"><Phone sx={{ color: '#FFC107' }} /></InputAdornment>,
@@ -129,6 +171,7 @@ const SignUp: React.FC = () => {
             type="submit"
             variant="contained"
             fullWidth
+            disabled={isLoading}
             sx={{
               mt: 3,
               backgroundColor: '#FFC107',
@@ -137,7 +180,7 @@ const SignUp: React.FC = () => {
               '&:hover': { backgroundColor: '#FFD54F' },
             }}
           >
-            Sign Up
+            {isLoading ? 'Signing Up...' : 'Sign Up'}
           </Button>
 
           <Typography variant="body2" sx={{ color: '#fff', mt: 2 }}>
@@ -146,6 +189,7 @@ const SignUp: React.FC = () => {
               component="button"
               onClick={() => navigate('/sign-in')}
               underline="hover"
+              disabled={isLoading}
               sx={{ color: '#FFD700', fontWeight: 'bold' }}
             >
               Sign In

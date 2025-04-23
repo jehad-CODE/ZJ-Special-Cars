@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Outlet, Link } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Button, Box, IconButton, TextField, Menu, MenuItem, Modal, Paper, InputAdornment } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { AppBar, Toolbar, Typography, Button, Box, IconButton, TextField, Menu, MenuItem, Modal, Paper, InputAdornment, Tooltip } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const Dashboard: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -15,6 +16,15 @@ const Dashboard: React.FC = () => {
   const [distance, setDistance] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  const navigate = useNavigate();
+
+  // Check if user is logged in on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+  }, []);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -54,6 +64,20 @@ const Dashboard: React.FC = () => {
     setMinPrice('');
     setMaxPrice('');
   };
+  
+  const handleSignOut = () => {
+    // Clear all localStorage items
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('role');
+    localStorage.removeItem('username');
+    localStorage.removeItem('email');
+    localStorage.removeItem('phone');
+    localStorage.removeItem('userId');
+    
+    setIsLoggedIn(false);
+    navigate('/');
+  };
 
   return (
     <Box sx={{ height: '100vh', overflow: 'hidden' }}>
@@ -72,7 +96,7 @@ const Dashboard: React.FC = () => {
           </Box>
 
           <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', width: '50%' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '30%' }}>
               <TextField
                 variant="outlined"
                 size="small"
@@ -129,8 +153,39 @@ const Dashboard: React.FC = () => {
             </Menu>
             <Button color="inherit" component={Link} to="/sell-your-car" sx={{ color: 'white', fontWeight: 'bold' }}>Sell Your Car</Button>
             <Button color="inherit" component={Link} to="/contact" sx={{ color: 'white', fontWeight: 'bold' }}>Contact</Button>
-            <Button color="inherit" component={Link} to="/sign-in" sx={{ color: 'white', fontWeight: 'bold' }}>Sign In</Button>
-            <Button color="inherit" component={Link} to="/user-profile" sx={{ color: 'white', fontWeight: 'bold' }}>Profile</Button>
+            
+            {isLoggedIn ? (
+              // Show Profile and Sign Out icon when logged in
+              <>
+                <Button 
+                  color="inherit" 
+                  component={Link} 
+                  to="/user-profile" 
+                  sx={{ color: 'white', fontWeight: 'bold' }}
+                >
+                  Profile
+                </Button>
+                <Tooltip title="Sign Out">
+                  <IconButton 
+                    color="inherit" 
+                    onClick={handleSignOut} 
+                    sx={{ color: '#ff4d4d' }}
+                  >
+                    <LogoutIcon />
+                  </IconButton>
+                </Tooltip>
+              </>
+            ) : (
+              // Show Sign In when logged out
+              <Button 
+                color="inherit" 
+                component={Link} 
+                to="/sign-in" 
+                sx={{ color: 'white', fontWeight: 'bold' }}
+              >
+                Sign In
+              </Button>
+            )}
           </Box>
 
           <IconButton color="inherit" edge="end" sx={{ display: { xs: 'block', sm: 'none' } }}>

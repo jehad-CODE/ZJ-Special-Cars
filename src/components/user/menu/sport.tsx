@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';  // Import axios
 import { 
   Box, Typography, Grid, Paper, Button, Pagination, Dialog, 
   DialogActions, DialogContent, DialogTitle, IconButton
@@ -23,32 +24,8 @@ interface Car {
   images: string[];
 }
 
-// Sample data with multiple images and additional details
-const cars: Car[] = [
-  { 
-    name: 'Ferrari F8', model: 'Tributo', year: 2020, price: '$280,000', 
-    mileage: '3,500', color: 'Red', gearType: 'Automatic', type: 'Sport',
-    details: 'Ferrari F8 is a high-performance sports car with a turbocharged V8 engine.',
-    sellerEmail: 'seller1@example.com', sellerPhone: '+1 (555) 123-4567',
-    images: ['/src/assets/ZjUserBackground.jpg', '/src/assets/ZjUserBackground.jpg'] 
-  },
-  { 
-    name: 'Lamborghini Huracan', model: 'EVO', year: 2021, price: '$300,000', 
-    mileage: '1,200', color: 'Yellow', gearType: 'Automatic', type: 'Sport',
-    details: 'Lamborghini Huracan is a luxury sports car known for its speed and style.',
-    sellerEmail: 'seller2@example.com', sellerPhone: '+1 (555) 987-6543',
-    images: ['/src/assets/ZjUserBackground.jpg', '/src/assets/ZjUserBackground.jpg'] 
-  },
-  { 
-    name: 'Porsche 911', model: 'Turbo S', year: 2022, price: '$150,000', 
-    mileage: '500', color: 'Silver', gearType: 'Manual', type: 'Sport',
-    details: 'Porsche 911 offers timeless design with high-end performance.',
-    sellerEmail: 'seller3@example.com', sellerPhone: '+1 (555) 456-7890',
-    images: ['/src/assets/ZjUserBackground.jpg', '/src/assets/ZjUserBackground.jpg'] 
-  },
-];
-
 const Sport: React.FC = () => {
+  const [cars, setCars] = useState<Car[]>([]); // Initialize empty cars array
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [currentCar, setCurrentCar] = useState<Car | null>(null);
@@ -56,7 +33,18 @@ const Sport: React.FC = () => {
 
   const carsPerPage = 9;
   const startIndex = (page - 1) * carsPerPage;
-  const currentCars = cars.slice(startIndex, startIndex + carsPerPage);
+  const currentCars = cars.filter(car => car.type === 'Sport').slice(startIndex, startIndex + carsPerPage);
+
+  // Fetch car data from the backend API
+  useEffect(() => {
+    axios.get('http://localhost:5000/api/cars')  // Change this URL to your actual endpoint
+      .then(response => {
+        setCars(response.data);  // Set the car data in state
+      })
+      .catch(error => {
+        console.error('Error fetching car data:', error);
+      });
+  }, []);  // Empty dependency array ensures it runs only once after the initial render
 
   const handleOpenModal = (car: Car) => {
     setCurrentCar(car);
@@ -183,36 +171,37 @@ const Sport: React.FC = () => {
               
               {/* Car details - simplified two-column layout */}
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Year:</Typography>
-                  <Typography variant="body1">{currentCar.year}</Typography>
-                  
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Mileage:</Typography>
-                  <Typography variant="body1">{currentCar.mileage} km</Typography>
-                  
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Color:</Typography>
-                  <Typography variant="body1">{currentCar.color}</Typography>
-                  
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Price:</Typography>
-                  <Typography variant="body1" sx={{ color: 'green' }}>{currentCar.price}</Typography>
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Gear Type:</Typography>
-                  <Typography variant="body1">{currentCar.gearType}</Typography>
-                  
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Type:</Typography>
-                  <Typography variant="body1">{currentCar.type}</Typography>
-                  
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Contact:</Typography>
-                  <Typography variant="body1">{currentCar.sellerEmail}</Typography>
-                  <Typography variant="body1">{currentCar.sellerPhone}</Typography>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Details:</Typography>
-                  <Typography variant="body1">{currentCar.details}</Typography>
-                </Grid>
+              <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2" color="text.secondary">Year:</Typography>
+                <Typography variant="body1">{currentCar.year}</Typography>
+
+                <Typography variant="subtitle2" color="text.secondary">Price:</Typography>
+                <Typography variant="body1">{currentCar.price}</Typography>
+
+                <Typography variant="subtitle2" color="text.secondary">Mileage:</Typography>
+                <Typography variant="body1">{currentCar.mileage}</Typography>
+
+                <Typography variant="subtitle2" color="text.secondary">Color:</Typography>
+                <Typography variant="body1">{currentCar.color}</Typography>
+
+                <Typography variant="subtitle2" color="text.secondary">Gear Type:</Typography>
+                <Typography variant="body1">{currentCar.gearType}</Typography>
+
+                <Typography variant="subtitle2" color="text.secondary">Type:</Typography>
+                <Typography variant="body1">{currentCar.type}</Typography>
+              </Grid>
+
+<Grid item xs={12} sm={6}>
+  <Typography variant="subtitle2" color="text.secondary">Seller Email:</Typography>
+  <Typography variant="body1">{currentCar.sellerEmail}</Typography>
+
+  <Typography variant="subtitle2" color="text.secondary">Seller Phone:</Typography>
+  <Typography variant="body1">{currentCar.sellerPhone}</Typography>
+
+  <Typography variant="subtitle2" color="text.secondary">Details:</Typography>
+  <Typography variant="body1">{currentCar.details}</Typography>
+</Grid>
+
               </Grid>
             </>
           )}
