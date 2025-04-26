@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';  // Import axios
 import { 
   Box, Typography, Grid, Paper, Button, Pagination, Dialog, 
   DialogActions, DialogContent, DialogTitle, IconButton
@@ -23,81 +24,8 @@ interface Car {
   images: string[];
 }
 
-// Updated sample data for hybrid/electric cars
-const hybridCars: Car[] = [
-  { 
-    name: 'Tesla', 
-    model: 'Model S',
-    year: 2022, 
-    price: '$80,000', 
-    mileage: '15,000',
-    color: 'Pearl White',
-    gearType: 'Automatic',
-    type: 'Electric',
-    details: 'The Tesla Model S is an all-electric luxury sedan that offers exceptional performance and range.',
-    sellerEmail: 'electric1@example.com',
-    sellerPhone: '+1 (555) 222-1111',
-    images: ['/src/assets/ZjUserBackground.jpg', '/src/assets/HybridBackground.jpg']
-  },
-  { 
-    name: 'Nissan', 
-    model: 'Leaf',
-    year: 2021, 
-    price: '$40,000', 
-    mileage: '12,500',
-    color: 'Blue',
-    gearType: 'Automatic',
-    type: 'Electric',
-    details: 'The Nissan Leaf is a compact all-electric car known for its affordability and eco-friendliness.',
-    sellerEmail: 'electric2@example.com',
-    sellerPhone: '+1 (555) 333-4444',
-    images: ['/src/assets/HybridBackground.jpg', '/src/assets/HybridBackground.jpg']
-  },
-  { 
-    name: 'Toyota', 
-    model: 'Prius Prime',
-    year: 2022, 
-    price: '$35,000', 
-    mileage: '8,200',
-    color: 'Silver',
-    gearType: 'Automatic',
-    type: 'Hybrid',
-    details: 'The Toyota Prius Prime is a plug-in hybrid that combines excellent fuel efficiency with electric-only driving capability.',
-    sellerEmail: 'hybrid1@example.com',
-    sellerPhone: '+1 (555) 777-8888',
-    images: ['/src/assets/HybridBackground.jpg', '/src/assets/HybridBackground.jpg']
-  },
-  { 
-    name: 'Porsche', 
-    model: 'Taycan',
-    year: 2023, 
-    price: '$130,000', 
-    mileage: '3,500',
-    color: 'Frozen Blue Metallic',
-    gearType: 'Automatic',
-    type: 'Electric',
-    details: 'The Porsche Taycan is a high-performance all-electric sports car that combines luxury with cutting-edge technology.',
-    sellerEmail: 'electric3@example.com',
-    sellerPhone: '+1 (555) 999-0000',
-    images: ['/src/assets/HybridBackground.jpg', '/src/assets/HybridBackground.jpg']
-  },
-  { 
-    name: 'Chevrolet', 
-    model: 'Bolt EV',
-    year: 2022, 
-    price: '$38,000', 
-    mileage: '9,800',
-    color: 'Bright Blue',
-    gearType: 'Automatic',
-    type: 'Electric',
-    details: 'The Chevrolet Bolt EV is an affordable all-electric vehicle with impressive range and practicality.',
-    sellerEmail: 'electric4@example.com',
-    sellerPhone: '+1 (555) 123-4567',
-    images: ['/src/assets/HybridBackground.jpg', '/src/assets/HybridBackground.jpg']
-  }
-];
-
 const HybridElectric: React.FC = () => {
+  const [cars, setCars] = useState<Car[]>([]); // Initialize empty cars array
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [currentCar, setCurrentCar] = useState<Car | null>(null);
@@ -105,7 +33,18 @@ const HybridElectric: React.FC = () => {
 
   const carsPerPage = 9;
   const startIndex = (page - 1) * carsPerPage;
-  const currentCars = hybridCars.slice(startIndex, startIndex + carsPerPage);
+  const currentCars = cars.filter(car => car.type === 'Hybrid/Electric').slice(startIndex, startIndex + carsPerPage);
+
+  // Fetch car data from the backend API
+  useEffect(() => {
+    axios.get('http://localhost:5000/api/cars')  // Change this URL to your actual endpoint
+      .then(response => {
+        setCars(response.data);  // Set the car data in state
+      })
+      .catch(error => {
+        console.error('Error fetching car data:', error);
+      });
+  }, []);  // Empty dependency array ensures it runs only once after the initial render
 
   const handleOpenModal = (car: Car) => {
     setCurrentCar(car);
@@ -135,7 +74,7 @@ const HybridElectric: React.FC = () => {
       overflowY: 'auto',
     }}>
       <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 4, textAlign: 'center' }}>
-        Hybrid/Electric Cars
+      Hybrid/Electric Cars
       </Typography>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -180,7 +119,7 @@ const HybridElectric: React.FC = () => {
 
       <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4 }}>
         <Pagination
-          count={Math.ceil(hybridCars.length / carsPerPage)}
+          count={Math.ceil(cars.filter(car => car.type === 'Classic').length / carsPerPage)}
           page={page}
           onChange={(_, value) => setPage(value)}
           color="primary"
@@ -236,29 +175,29 @@ const HybridElectric: React.FC = () => {
                   <Typography variant="subtitle2" color="text.secondary">Year:</Typography>
                   <Typography variant="body1">{currentCar.year}</Typography>
                   
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Price:</Typography>
+                  <Typography variant="body1" sx={{ color: 'green' }}>{currentCar.price}</Typography>
+                  
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Mileage:</Typography>
-                  <Typography variant="body1">{currentCar.mileage} miles</Typography>
+                  <Typography variant="body1">{currentCar.mileage}</Typography>
                   
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Color:</Typography>
                   <Typography variant="body1">{currentCar.color}</Typography>
                   
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Price:</Typography>
-                  <Typography variant="body1" sx={{ color: 'green' }}>{currentCar.price}</Typography>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Gear Type:</Typography>
+                  <Typography variant="body1">{currentCar.gearType}</Typography>
                 </Grid>
                 
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Gear Type:</Typography>
-                  <Typography variant="body1">{currentCar.gearType}</Typography>
-                  
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Type:</Typography>
+                  <Typography variant="subtitle2" color="text.secondary">Type:</Typography>
                   <Typography variant="body1">{currentCar.type}</Typography>
                   
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Contact:</Typography>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Seller Email:</Typography>
                   <Typography variant="body1">{currentCar.sellerEmail}</Typography>
+                  
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Seller Phone:</Typography>
                   <Typography variant="body1">{currentCar.sellerPhone}</Typography>
-                </Grid>
-                
-                <Grid item xs={12}>
+                  
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Details:</Typography>
                   <Typography variant="body1">{currentCar.details}</Typography>
                 </Grid>
@@ -273,5 +212,6 @@ const HybridElectric: React.FC = () => {
     </Box>
   );
 };
+
 
 export default HybridElectric;

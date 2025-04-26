@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';  // Import axios
 import { 
   Box, Typography, Grid, Paper, Button, Pagination, Dialog, 
   DialogActions, DialogContent, DialogTitle, IconButton
@@ -23,81 +24,8 @@ interface Car {
   images: string[];
 }
 
-// Updated sample data for classic cars
-const classicCars: Car[] = [
-  { 
-    name: '1967 Ford Mustang', 
-    model: 'GT Fastback',
-    year: 1967, 
-    price: '$50,000', 
-    mileage: '89,000',
-    color: 'Candy Apple Red',
-    gearType: 'Manual',
-    type: 'Classic',
-    details: 'The 1967 Ford Mustang is a classic American muscle car with a V8 engine.',
-    sellerEmail: 'classic1@example.com',
-    sellerPhone: '+1 (555) 222-3333',
-    images: ['/src/assets/ClassicBackground.jpg', '/src/assets/ClassicBackground.jpg']
-  },
-  { 
-    name: 'Chevrolet Camaro', 
-    model: 'SS 1969',
-    year: 1969, 
-    price: '$60,000', 
-    mileage: '75,600',
-    color: 'Black',
-    gearType: 'Manual',
-    type: 'Classic',
-    details: 'The 1969 Chevrolet Camaro is known for its aggressive styling and powerful engine.',
-    sellerEmail: 'classic2@example.com',
-    sellerPhone: '+1 (555) 444-5555',
-    images: ['/src/assets/ClassicBackground.jpg', '/src/assets/ClassicBackground.jpg', '/src/assets/ClassicBackground.jpg']
-  },
-  { 
-    name: 'Dodge Charger', 
-    model: 'R/T 1969',
-    year: 1969, 
-    price: '$75,000', 
-    mileage: '62,000',
-    color: 'Midnight Black',
-    gearType: 'Manual',
-    type: 'Classic',
-    details: 'The 1969 Dodge Charger features a powerful HEMI V8 and is an icon of the muscle car era.',
-    sellerEmail: 'classic3@example.com',
-    sellerPhone: '+1 (555) 666-7777',
-    images: ['/src/assets/ClassicBackground.jpg', '/src/assets/ClassicBackground.jpg']
-  },
-  { 
-    name: 'Plymouth Barracuda', 
-    model: 'HEMI 1970',
-    year: 1970, 
-    price: '$80,000', 
-    mileage: '55,400',
-    color: 'Electric Blue',
-    gearType: 'Manual',
-    type: 'Classic',
-    details: 'The 1970 Plymouth Barracuda is known for its distinctive design and high-performance engines.',
-    sellerEmail: 'classic4@example.com',
-    sellerPhone: '+1 (555) 888-9999',
-    images: ['/src/assets/ClassicBackground.jpg']
-  },
-  { 
-    name: 'Chevrolet Corvette', 
-    model: 'Stingray 1967',
-    year: 1967, 
-    price: '$85,000', 
-    mileage: '45,000',
-    color: 'Marina Blue',
-    gearType: 'Manual',
-    type: 'Classic',
-    details: 'The 1967 Chevrolet Corvette is a high-performance sports car with timeless style.',
-    sellerEmail: 'classic5@example.com',
-    sellerPhone: '+1 (555) 111-2222',
-    images: ['/src/assets/ClassicBackground.jpg', '/src/assets/ClassicBackground.jpg']
-  }
-];
-
 const Classic: React.FC = () => {
+  const [cars, setCars] = useState<Car[]>([]); // Initialize empty cars array
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [currentCar, setCurrentCar] = useState<Car | null>(null);
@@ -105,7 +33,18 @@ const Classic: React.FC = () => {
 
   const carsPerPage = 9;
   const startIndex = (page - 1) * carsPerPage;
-  const currentCars = classicCars.slice(startIndex, startIndex + carsPerPage);
+  const currentCars = cars.filter(car => car.type === 'Classic').slice(startIndex, startIndex + carsPerPage);
+
+  // Fetch car data from the backend API
+  useEffect(() => {
+    axios.get('http://localhost:5000/api/cars')  // Change this URL to your actual endpoint
+      .then(response => {
+        setCars(response.data);  // Set the car data in state
+      })
+      .catch(error => {
+        console.error('Error fetching car data:', error);
+      });
+  }, []);  // Empty dependency array ensures it runs only once after the initial render
 
   const handleOpenModal = (car: Car) => {
     setCurrentCar(car);
@@ -180,7 +119,7 @@ const Classic: React.FC = () => {
 
       <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4 }}>
         <Pagination
-          count={Math.ceil(classicCars.length / carsPerPage)}
+          count={Math.ceil(cars.filter(car => car.type === 'Classic').length / carsPerPage)}
           page={page}
           onChange={(_, value) => setPage(value)}
           color="primary"
@@ -236,29 +175,29 @@ const Classic: React.FC = () => {
                   <Typography variant="subtitle2" color="text.secondary">Year:</Typography>
                   <Typography variant="body1">{currentCar.year}</Typography>
                   
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Price:</Typography>
+                  <Typography variant="body1" sx={{ color: 'green' }}>{currentCar.price}</Typography>
+                  
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Mileage:</Typography>
-                  <Typography variant="body1">{currentCar.mileage} miles</Typography>
+                  <Typography variant="body1">{currentCar.mileage}</Typography>
                   
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Color:</Typography>
                   <Typography variant="body1">{currentCar.color}</Typography>
                   
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Price:</Typography>
-                  <Typography variant="body1" sx={{ color: 'green' }}>{currentCar.price}</Typography>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Gear Type:</Typography>
+                  <Typography variant="body1">{currentCar.gearType}</Typography>
                 </Grid>
                 
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Gear Type:</Typography>
-                  <Typography variant="body1">{currentCar.gearType}</Typography>
-                  
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Type:</Typography>
+                  <Typography variant="subtitle2" color="text.secondary">Type:</Typography>
                   <Typography variant="body1">{currentCar.type}</Typography>
                   
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Contact:</Typography>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Seller Email:</Typography>
                   <Typography variant="body1">{currentCar.sellerEmail}</Typography>
+                  
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Seller Phone:</Typography>
                   <Typography variant="body1">{currentCar.sellerPhone}</Typography>
-                </Grid>
-                
-                <Grid item xs={12}>
+                  
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Details:</Typography>
                   <Typography variant="body1">{currentCar.details}</Typography>
                 </Grid>

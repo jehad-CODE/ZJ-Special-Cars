@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -32,13 +31,39 @@ app.use('/uploads', express.static('uploads'));
 // Routes
 const carRoutes = require('./routes/Cars');
 const authRoutes = require('./routes/auth');
+const lifeProductRoutes = require('./routes/LifeProducts');
+const carAccessoryRoutes = require('./routes/carAccessories');
 
 // API Routes
 app.use('/api/cars', carRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/life-products', lifeProductRoutes);
+app.use('/api/car-accessories', carAccessoryRoutes);
 
 // Handle car image uploads
 app.post('/api/cars/upload', upload.array('images', 5), (req, res) => {
+  if (!req.files) {
+    return res.status(400).json({ message: 'No files uploaded.' });
+  }
+  
+  // Return the file paths of uploaded images
+  const imagePaths = req.files.map(file => `/uploads/${file.filename}`);
+  res.json({ message: 'Files uploaded successfully.', files: imagePaths });
+});
+
+// Handle life product image uploads
+app.post('/api/life-products/upload', upload.array('images', 5), (req, res) => {
+  if (!req.files) {
+    return res.status(400).json({ message: 'No files uploaded.' });
+  }
+  
+  // Return the file paths of uploaded images
+  const imagePaths = req.files.map(file => `/uploads/${file.filename}`);
+  res.json({ message: 'Files uploaded successfully.', files: imagePaths });
+});
+
+// Handle car accessories image uploads
+app.post('/api/car-accessories/upload', upload.array('images', 5), (req, res) => {
   if (!req.files) {
     return res.status(400).json({ message: 'No files uploaded.' });
   }

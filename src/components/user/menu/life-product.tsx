@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   Box, Typography, Grid, Paper, Button, Pagination, Dialog, 
-  DialogActions, DialogContent, DialogTitle, IconButton
+  DialogActions, DialogContent, DialogTitle, IconButton, CircularProgress
 } from '@mui/material';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -9,6 +10,7 @@ import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 
 // Define product interface for TypeScript
 interface Product {
+  _id: string;
   name: string;
   price: string;
   category: string;
@@ -17,77 +19,40 @@ interface Product {
   details: string;
   sellerContact: string;
   images: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-// Updated sample data with multiple images and additional details
-const products: Product[] = [
-  { 
-    name: 'Car-Themed Mug', 
-    price: '$15', 
-    category: 'Drinkware',
-    brand: 'AutoStyle',
-    availability: 'In Stock',
-    details: 'A mug with a car theme design, perfect for car enthusiasts. Made from high-quality ceramic with a comfortable handle.',
-    sellerContact: 'store@example.com',
-    images: ['/src/assets/watch.jpg', '/src/assets/watch.jpg'] 
-  },
-  { 
-    name: 'Driving Gloves', 
-    price: '$30', 
-    category: 'Apparel',
-    brand: 'DriveFit',
-    availability: 'In Stock',
-    details: 'Stylish and comfortable driving gloves made from genuine leather. Provides excellent grip and comfort for long drives.',
-    sellerContact: 'apparel@example.com',
-    images: ['/src/assets/watch.jpg', '/src/assets/watch.jpg'] 
-  },
-  { 
-    name: 'Racing Jacket', 
-    price: '$120', 
-    category: 'Apparel',
-    brand: 'SpeedWear',
-    availability: 'Limited Stock',
-    details: 'A high-quality racing jacket for car enthusiasts. Features multiple pockets and weather-resistant material.',
-    sellerContact: 'speedwear@example.com',
-    images: ['/src/assets/watch.jpg', '/src/assets/watch.jpg'] 
-  },
-  { 
-    name: 'Watch', 
-    price: '$50', 
-    category: 'Accessories',
-    brand: 'DriveTime',
-    availability: 'In Stock',
-    details: 'A watch designed for driving enthusiasts with speedometer-inspired dial and leather strap.',
-    sellerContact: 'watches@example.com',
-    images: ['/src/assets/watch.jpg', '/src/assets/watch.jpg'] 
-  },
-  { 
-    name: 'Car-Themed T-Shirt', 
-    price: '$25', 
-    category: 'Apparel',
-    brand: 'AutoStyle',
-    availability: 'In Stock',
-    details: 'A stylish T-shirt with a car logo. Made from 100% cotton for comfort and durability.',
-    sellerContact: 'apparel@example.com',
-    images: ['/src/assets/watch.jpg', '/src/assets/watch.jpg'] 
-  },
-  { 
-    name: 'Driving Shoes', 
-    price: '$80', 
-    category: 'Footwear',
-    brand: 'RacePace',
-    availability: 'In Stock',
-    details: 'High-performance shoes for driving. Features thin soles for better pedal feel and comfort.',
-    sellerContact: 'footwear@example.com',
-    images: ['/src/assets/watch.jpg', '/src/assets/watch.jpg'] 
-  }
-];
+// API base URL
+const API_URL = 'http://localhost:5000/api';
 
 const LifeProduct: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${API_URL}/life-products`);
+        setProducts(response.data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError('Failed to load products. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const productsPerPage = 6;
   const startIndex = (page - 1) * productsPerPage;
@@ -124,55 +89,82 @@ const LifeProduct: React.FC = () => {
         Life Products
       </Typography>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {currentProducts.map((product, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
-            <Paper elevation={4} sx={{ 
-              borderRadius: 3, 
-              padding: 2, 
-              textAlign: 'center', 
-              backgroundColor: '#333',
-              transition: 'transform 0.3s',
-              '&:hover': { transform: 'scale(1.02)' }
-            }}>
-              <img
-                src={product.images[0]}
-                alt={product.name}
-                style={{ width: '100%', borderRadius: '8px', height: '180px', objectFit: 'cover' }}
-              />
-              <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
-                {product.name}
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'lightgray' }}>
-                {product.brand}
-              </Typography>
-              <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
-                {product.price}
-              </Typography>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                sx={{ mt: 2 }} 
-                onClick={() => handleOpenModal(product)}
-                fullWidth
-              >
-                <ShoppingBagIcon sx={{ mr: 1 }} />
-                View Details
-              </Button>
-            </Paper>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+          <CircularProgress color="primary" />
+        </Box>
+      ) : error ? (
+        <Box sx={{ textAlign: 'center', my: 4 }}>
+          <Typography variant="h6" color="error">{error}</Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            sx={{ mt: 2 }} 
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </Box>
+      ) : products.length === 0 ? (
+        <Box sx={{ textAlign: 'center', my: 4 }}>
+          <Typography variant="h6">No products found</Typography>
+        </Box>
+      ) : (
+        <>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {currentProducts.map((product) => (
+              <Grid item xs={12} sm={6} md={4} key={product._id}>
+                <Paper elevation={4} sx={{ 
+                  borderRadius: 3, 
+                  padding: 2, 
+                  textAlign: 'center', 
+                  backgroundColor: '#333',
+                  transition: 'transform 0.3s',
+                  '&:hover': { transform: 'scale(1.02)' }
+                }}>
+                  <img
+                    src={product.images[0]}
+                    alt={product.name}
+                    style={{ width: '100%', borderRadius: '8px', height: '180px', objectFit: 'cover' }}
+                  />
+                  <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
+                    {product.name}
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'lightgray' }}>
+                    {product.brand}
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
+                    {product.price}
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="primary" 
+                    sx={{ mt: 2 }} 
+                    onClick={() => handleOpenModal(product)}
+                    fullWidth
+                  >
+                    <ShoppingBagIcon sx={{ mr: 1 }} />
+                    View Details
+                  </Button>
+                </Paper>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4 }}>
-        <Pagination
-          count={Math.ceil(products.length / productsPerPage)}
-          page={page}
-          onChange={(_, value) => setPage(value)}
-          color="primary"
-          sx={{ '& .MuiPaginationItem-root': { color: 'white' } }}
-        />
-      </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4, flexDirection: 'column', alignItems: 'center' }}>
+            <Pagination
+              count={Math.ceil(products.length / productsPerPage)}
+              page={page}
+              onChange={(_, value) => setPage(value)}
+              color="primary"
+              sx={{ '& .MuiPaginationItem-root': { color: 'white' } }}
+            />
+            <Typography variant="body2" sx={{ mt: 1, color: 'gray' }}>
+              Page {page} of {Math.ceil(products.length / productsPerPage)}
+            </Typography>
+          </Box>
+        </>
+      )}
 
       <Dialog 
         open={open} 

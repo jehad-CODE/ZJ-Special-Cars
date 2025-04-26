@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   Box, Typography, Grid, Paper, Button, Pagination, Dialog, 
-  DialogActions, DialogContent, DialogTitle, IconButton
+  DialogActions, DialogContent, DialogTitle, IconButton, CircularProgress
 } from '@mui/material';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -9,6 +10,7 @@ import BuildIcon from '@mui/icons-material/Build';
 
 // Define accessory interface for TypeScript
 interface Accessory {
+  _id: string;
   name: string;
   price: string;
   category: string;
@@ -18,83 +20,40 @@ interface Accessory {
   details: string;
   sellerContact: string;
   images: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-// Updated sample data with multiple images and additional details
-const accessories: Accessory[] = [
-  { 
-    name: 'Leather Steering Wheel', 
-    price: '$120', 
-    category: 'Interior',
-    brand: 'AutoGrip',
-    compatibility: 'Universal',
-    installation: 'Professional Installation Recommended',
-    details: 'High-quality leather steering wheel for better grip. Features anti-slip surface and ergonomic design for comfortable driving.',
-    sellerContact: 'autogrip@example.com',
-    images: ['/src/assets/wheel.jpg', '/src/assets/wheel.jpg'] 
-  },
-  { 
-    name: 'All-Weather Car Mats', 
-    price: '$50', 
-    category: 'Interior',
-    brand: 'FloorGuard',
-    compatibility: 'Most Models',
-    installation: 'DIY Installation',
-    details: 'Durable car mats that protect your car interior from dirt and weather. Made from high-quality rubber with anti-slip backing.',
-    sellerContact: 'floorguard@example.com',
-    images: ['/src/assets/watch.jpg', '/src/assets/wheel.jpg'] 
-  },
-  { 
-    name: 'Seat Covers', 
-    price: '$75', 
-    category: 'Interior',
-    brand: 'ComfortRide',
-    compatibility: 'Universal',
-    installation: 'DIY Installation',
-    details: 'Protect your car seats with stylish and durable covers. Made from premium materials for comfort and longevity.',
-    sellerContact: 'comfortride@example.com',
-    images: ['/src/assets/wheel.jpg', '/src/assets/wheel.jpg'] 
-  },
-  { 
-    name: 'Sunshade', 
-    price: '$20', 
-    category: 'Interior',
-    brand: 'SunBlock',
-    compatibility: 'Universal',
-    installation: 'DIY Installation',
-    details: 'Sunshade for protecting your cars interior from sunlight. Foldable design for easy storage when not in use.',
-    sellerContact: 'sunblock@example.com',
-    images: ['/src/assets/wheel.jpg', '/src/assets/wheel.jpg'] 
-  },
-  { 
-    name: 'LED Headlights', 
-    price: '$200', 
-    category: 'Exterior',
-    brand: 'BrightDrive',
-    compatibility: 'Check Vehicle Compatibility',
-    installation: 'Professional Installation Recommended',
-    details: 'Upgrade your car with high-performance LED headlights. Provides better visibility and modern look.',
-    sellerContact: 'brightdrive@example.com',
-    images: ['/src/assets/wheel.jpg', '/src/assets/wheel.jpg'] 
-  },
-  { 
-    name: 'GPS Navigation System', 
-    price: '$150', 
-    category: 'Electronics',
-    brand: 'RoadGuide',
-    compatibility: 'Universal',
-    installation: 'DIY or Professional Installation',
-    details: 'Stay on track with this GPS navigation system. Features real-time traffic updates and voice guidance.',
-    sellerContact: 'roadguide@example.com',
-    images: ['/src/assets/wheel.jpg', '/src/assets/wheel.jpg'] 
-  }
-];
+// API base URL
+const API_URL = 'http://localhost:5000/api';
 
 const CarsAccessories: React.FC = () => {
+  const [accessories, setAccessories] = useState<Accessory[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [currentAccessory, setCurrentAccessory] = useState<Accessory | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Fetch accessories from API
+  useEffect(() => {
+    const fetchAccessories = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${API_URL}/car-accessories`);
+        setAccessories(response.data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching accessories:', err);
+        setError('Failed to load accessories. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAccessories();
+  }, []);
 
   const accessoriesPerPage = 6;
   const startIndex = (page - 1) * accessoriesPerPage;
@@ -131,55 +90,82 @@ const CarsAccessories: React.FC = () => {
         Cars Accessories
       </Typography>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {currentAccessories.map((accessory, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
-            <Paper elevation={4} sx={{ 
-              borderRadius: 3, 
-              padding: 2, 
-              textAlign: 'center', 
-              backgroundColor: '#333',
-              transition: 'transform 0.3s',
-              '&:hover': { transform: 'scale(1.02)' }
-            }}>
-              <img
-                src={accessory.images[0]}
-                alt={accessory.name}
-                style={{ width: '100%', borderRadius: '8px', height: '180px', objectFit: 'cover' }}
-              />
-              <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
-                {accessory.name}
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'lightgray' }}>
-                {accessory.brand}
-              </Typography>
-              <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
-                {accessory.price}
-              </Typography>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                sx={{ mt: 2 }} 
-                onClick={() => handleOpenModal(accessory)}
-                fullWidth
-              >
-                <BuildIcon sx={{ mr: 1 }} />
-                View Details
-              </Button>
-            </Paper>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+          <CircularProgress color="primary" />
+        </Box>
+      ) : error ? (
+        <Box sx={{ textAlign: 'center', my: 4 }}>
+          <Typography variant="h6" color="error">{error}</Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            sx={{ mt: 2 }} 
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </Box>
+      ) : accessories.length === 0 ? (
+        <Box sx={{ textAlign: 'center', my: 4 }}>
+          <Typography variant="h6">No accessories found</Typography>
+        </Box>
+      ) : (
+        <>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {currentAccessories.map((accessory) => (
+              <Grid item xs={12} sm={6} md={4} key={accessory._id}>
+                <Paper elevation={4} sx={{ 
+                  borderRadius: 3, 
+                  padding: 2, 
+                  textAlign: 'center', 
+                  backgroundColor: '#333',
+                  transition: 'transform 0.3s',
+                  '&:hover': { transform: 'scale(1.02)' }
+                }}>
+                  <img
+                    src={accessory.images[0]}
+                    alt={accessory.name}
+                    style={{ width: '100%', borderRadius: '8px', height: '180px', objectFit: 'cover' }}
+                  />
+                  <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
+                    {accessory.name}
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'lightgray' }}>
+                    {accessory.brand}
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
+                    {accessory.price}
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="primary" 
+                    sx={{ mt: 2 }} 
+                    onClick={() => handleOpenModal(accessory)}
+                    fullWidth
+                  >
+                    <BuildIcon sx={{ mr: 1 }} />
+                    View Details
+                  </Button>
+                </Paper>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4 }}>
-        <Pagination
-          count={Math.ceil(accessories.length / accessoriesPerPage)}
-          page={page}
-          onChange={(_, value) => setPage(value)}
-          color="primary"
-          sx={{ '& .MuiPaginationItem-root': { color: 'white' } }}
-        />
-      </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4, flexDirection: 'column', alignItems: 'center' }}>
+            <Pagination
+              count={Math.ceil(accessories.length / accessoriesPerPage)}
+              page={page}
+              onChange={(_, value) => setPage(value)}
+              color="primary"
+              sx={{ '& .MuiPaginationItem-root': { color: 'white' } }}
+            />
+            <Typography variant="body2" sx={{ mt: 1, color: 'gray' }}>
+              Page {page} of {Math.ceil(accessories.length / accessoriesPerPage)}
+            </Typography>
+          </Box>
+        </>
+      )}
 
       <Dialog 
         open={open} 
