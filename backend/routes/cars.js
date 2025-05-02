@@ -1,4 +1,3 @@
-// routes/cars.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -18,8 +17,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Route for uploading car images (multiple images allowed)
-router.post('/upload', upload.array('images', 5), (req, res) => {
-  if (!req.files) {
+router.post('/upload', upload.array('images', 10), (req, res) => {
+  if (!req.files || req.files.length === 0) {
     return res.status(400).json({ message: 'No files uploaded.' });
   }
 
@@ -28,19 +27,27 @@ router.post('/upload', upload.array('images', 5), (req, res) => {
   res.json({ message: 'Files uploaded successfully.', files: imagePaths });
 });
 
-// Get all approved cars or all cars for admins/staff
+// Get all cars with filtering options
 router.get('/', async (req, res) => {
   try {
-    const { role = 'user', type } = req.query;
+    const { role = 'user', type, email } = req.query;
     
-    // Build query - users only see approved cars
-    const query = role === 'user' 
-      ? { status: 'approved' } 
-      : {};
+    // Build query based on parameters
+    let query = {};
     
-    // Add type filter if provided
+    // Role-based filtering - users only see approved cars unless they're the seller
+    if (role === 'user' && !email) {
+      query.status = 'approved';
+    }
+    
+    // Type filtering
     if (type && type !== 'All') {
       query.type = type;
+    }
+    
+    // Email filtering - if email is provided, show all cars from that seller
+    if (email) {
+      query.sellerEmail = email;
     }
     
     const cars = await Car.find(query).sort({ createdAt: -1 });
@@ -64,18 +71,28 @@ router.get('/:id', async (req, res) => {
 // Add a new car
 router.post('/', async (req, res) => {
   try {
-    // If user role, set status to pending, if admin/staff, set status to approved
     const status = ['admin', 'staff'].includes(req.body.role) ? 'approved' : 'pending';
     
-    const car = new Car({
-      ...req.body,
-      images: req.body.images || [], // images will be an array of file paths
-      status
-    });
+    // Check if sellerPhone is provided directly, if not, use it from phone field
+    let sellerPhone = req.body.sellerPhone;
+    if (!sellerPhone && req.body.phone) {
+      sellerPhone = req.body.phone;
+    } else if (!sellerPhone) {
+      sellerPhone = ''; // Default to empty string if neither is provided
+    }
     
+    const carData = {
+      ...req.body,
+      sellerPhone,
+      images: Array.isArray(req.body.images) ? req.body.images : [],
+      status
+    };
+    
+    const car = new Car(carData);
     const newCar = await car.save();
     res.status(201).json(newCar);
   } catch (err) {
+    console.error('Error saving car:', err);
     res.status(400).json({ message: err.message });
   }
 });
@@ -88,7 +105,7 @@ router.patch('/:id/status', async (req, res) => {
     }
     
     const { status } = req.body;
-    if (!['approved', 'rejected'].includes(status)) {
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
     
@@ -108,15 +125,30 @@ router.patch('/:id/status', async (req, res) => {
 // Update car details
 router.put('/:id', async (req, res) => {
   try {
+    const updateData = { ...req.body };
+    
+    // Handle the phone field consistently
+    if (req.body.phone !== undefined && !req.body.sellerPhone) {
+      updateData.sellerPhone = req.body.phone;
+    } else if (updateData.sellerPhone === undefined) {
+      updateData.sellerPhone = '';
+    }
+    
+    // Ensure images is handled correctly if present
+    if (updateData.images && !Array.isArray(updateData.images)) {
+      updateData.images = [];
+    }
+    
     const car = await Car.findByIdAndUpdate(
       req.params.id, 
-      req.body, 
+      updateData, 
       { new: true, runValidators: true }
     );
     
     if (!car) return res.status(404).json({ message: 'Car not found' });
     res.json(car);
   } catch (err) {
+    console.error('Error updating car:', err);
     res.status(400).json({ message: err.message });
   }
 });

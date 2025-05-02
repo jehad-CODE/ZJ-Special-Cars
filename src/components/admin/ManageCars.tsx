@@ -1,54 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography, Box, TextField, Button, CircularProgress, Grid, InputLabel, MenuItem,
   Select, FormControl, Card, CardContent, CardMedia, IconButton, Dialog,
-  DialogTitle, DialogContent, DialogActions, Pagination, Stack
+  DialogTitle, DialogContent, DialogActions, Pagination, Stack, Chip,
+  ImageList, ImageListItem
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import axios from 'axios';
 
-// Define car interface with all fields from SellYourCar
+// Define car interface
 interface Car {
-  id: number; name: string; model: string; year: number; mileage: string;
-  details: string; email: string; phone: string; color: string;
-  gearType: string; type: string; price: number; image: string;
+  _id?: string;
+  name: string;
+  model: string;
+  year: number;
+  mileage: string;
+  details: string;
+  sellerEmail: string;
+  sellerPhone: string; // Updated to match backend model
+  color: string;
+  gearType: string;
+  type: string;
+  price: number;
+  images: string[];
+  status: string;
 }
 
-// Sample car data with all fields
-const allCars: Car[] = [
-  { id: 1, name: 'Ferrari', model: '488 GTB', year: 2020, mileage: '3,500',
-    details: 'Ferrari 488 GTB with twin-turbo V8 engine, excellent condition, one owner.',
-    email: 'seller1@example.com', phone: '+966 501 111 222', color: 'Red',
-    gearType: 'Automatic', type: 'Sport', price: 250000, image: '/src/assets/ZjUserBackground.jpg' },
-  { id: 2, name: 'Tesla', model: 'Model S', year: 2022, mileage: '1,200',
-    details: 'Tesla Model S with autopilot, premium interior, and extended range battery.',
-    email: 'seller2@example.com', phone: '+966 502 333 444', color: 'White',
-    gearType: 'Automatic', type: 'Hybrid/Electric', price: 80000, image: '/src/assets/watch.jpg' },
-  { id: 3, name: 'Lamborghini', model: 'Aventador', year: 2019, mileage: '5,800',
-    details: 'Lamborghini Aventador in perfect condition with V12 engine.',
-    email: 'seller3@example.com', phone: '+966 503 555 666', color: 'Yellow',
-    gearType: 'Automatic', type: 'Sport', price: 300000, image: '/src/assets/ZjUserBackground.jpg' },
-  { id: 4, name: 'Porsche', model: '911', year: 2021, mileage: '2,400',
-    details: 'Porsche 911 Turbo S with sports package and custom interior.',
-    email: 'seller4@example.com', phone: '+966 504 777 888', color: 'Silver',
-    gearType: 'Manual', type: 'Classic', price: 150000, image: '/src/assets/watch.jpg' },
-  { id: 5, name: 'BMW', model: 'i8', year: 2020, mileage: '3,200',
-    details: 'BMW i8 hybrid sports car with butterfly doors and futuristic design.',
-    email: 'seller5@example.com', phone: '+966 505 999 000', color: 'Blue',
-    gearType: 'Automatic', type: 'Hybrid/Electric', price: 140000, image: '/src/assets/ZjUserBackground.jpg' },
-];
+const API_URL = 'http://localhost:5000/api';
 
 const ManageCars: React.FC = () => {
-  const [cars, setCars] = useState<Car[]>(allCars);
+  // State management
+  const [cars, setCars] = useState<Car[]>([]);
   const [filter, setFilter] = useState<string>('All');
   const [page, setPage] = useState<number>(1);
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [selectedImages, setSelectedImages] = useState<{file: File, preview: string}[]>([]);
   
-  // Form state - matching SellYourCar component
+  // Form state
   const [carName, setCarName] = useState('');
   const [carModel, setCarModel] = useState('');
   const [carYear, setCarYear] = useState('');
@@ -60,17 +58,57 @@ const ManageCars: React.FC = () => {
   const [carGearType, setCarGearType] = useState('');
   const [carType, setCarType] = useState('');
   const [carPrice, setCarPrice] = useState('');
-  const [carImage, setCarImage] = useState('/src/assets/ZjUserBackground.jpg');
+  const [carImages, setCarImages] = useState<string[]>([]);
+  
+  // Image gallery dialog
+  const [openGallery, setOpenGallery] = useState<boolean>(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   
   const itemsPerPage = 9;
-  const filteredCars = filter === 'All' ? cars : cars.filter(car => car.type === filter);
-  const paginatedCars = filteredCars.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  // Fetch cars on component mount and filter change
+  useEffect(() => {
+    fetchCars();
+  }, [filter]);
+  
+  // Cleanup for image previews
+  useEffect(() => {
+    return () => {
+      selectedImages.forEach(image => URL.revokeObjectURL(image.preview));
+    };
+  }, [selectedImages]);
+
+  const fetchCars = async () => {
+    try {
+      setIsLoading(true);
+      const params: any = { role: 'admin' };
+      if (filter !== 'All') params.type = filter;
+      
+      const response = await axios.get(`${API_URL}/cars`, { params });
+      setCars(response.data);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching cars:', error);
+      setIsLoading(false);
+    }
+  };
 
   const resetForm = () => {
-    setCarName(''); setCarModel(''); setCarYear(''); setCarMileage('');
-    setCarDetails(''); setCarEmail(''); setCarPhone(''); setCarColor('');
-    setCarGearType(''); setCarType(''); setCarPrice(''); 
-    setCarImage('/src/assets/ZjUserBackground.jpg');
+    setCarName('');
+    setCarModel('');
+    setCarYear('');
+    setCarMileage('');
+    setCarDetails('');
+    setCarEmail('');
+    setCarPhone('');
+    setCarColor('');
+    setCarGearType('');
+    setCarType('');
+    setCarPrice('');
+    setCarImages([]);
+    setImageFiles([]);
+    selectedImages.forEach(image => URL.revokeObjectURL(image.preview));
+    setSelectedImages([]);
   };
 
   const handleOpenAddDialog = () => {
@@ -81,54 +119,156 @@ const ManageCars: React.FC = () => {
 
   const handleOpenEditDialog = (car: Car) => {
     setSelectedCar(car);
-    setCarName(car.name); setCarModel(car.model); setCarYear(String(car.year));
-    setCarMileage(car.mileage); setCarDetails(car.details); setCarEmail(car.email);
-    setCarPhone(car.phone); setCarColor(car.color); setCarGearType(car.gearType);
-    setCarType(car.type); setCarPrice(String(car.price)); setCarImage(car.image);
+    setCarName(car.name);
+    setCarModel(car.model);
+    setCarYear(String(car.year));
+    setCarMileage(car.mileage);
+    setCarDetails(car.details);
+    setCarEmail(car.sellerEmail);
+    // Use sellerPhone from backend
+    setCarPhone(car.sellerPhone || '');
+    setCarColor(car.color);
+    setCarGearType(car.gearType);
+    setCarType(car.type);
+    setCarPrice(String(car.price));
+    setCarImages(car.images || []);
+    setSelectedImages([]);
     setOpenDialog(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleOpenGallery = (images: string[]) => {
+    setGalleryImages(images);
+    setOpenGallery(true);
+  };
+
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this car?')) {
-      setCars(cars.filter(car => car.id !== id));
+      try {
+        await axios.delete(`${API_URL}/cars/${id}`);
+        fetchCars(); 
+      } catch (error) {
+        console.error('Error deleting car:', error);
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleStatusChange = async (id: string, status: string) => {
+    try {
+      await axios.patch(`${API_URL}/cars/${id}/status`, {
+        status,
+        userRole: 'admin'
+      });
+      fetchCars();
+    } catch (error) {
+      console.error('Error updating car status:', error);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setImageFiles(files);
+      
+      // Create previews for selected images
+      const newSelectedImages = files.map(file => ({
+        file,
+        preview: URL.createObjectURL(file)
+      }));
+      
+      setSelectedImages(newSelectedImages);
+    }
+  };
+
+  const uploadImages = async () => {
+    if (imageFiles.length === 0) return [];
+    
+    const formData = new FormData();
+    imageFiles.forEach(file => {
+      formData.append('images', file);
+    });
+    
+    try {
+      const response = await axios.post(`${API_URL}/cars/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data.files;
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      return [];
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!carName || !carModel || !carYear || !carMileage || !carColor || !carGearType || !carType || !carPrice) {
+    if (!carName || !carModel || !carYear || !carMileage || !carColor || 
+        !carGearType || !carType || !carPrice || !carEmail) {
       alert('Please fill all required fields');
       return;
     }
+    
     setIsSubmitting(true);
-    setTimeout(() => {
-      if (selectedCar) {
-        // Edit existing car
-        setCars(cars.map(car => car.id === selectedCar.id ? {
-          ...car, name: carName, model: carModel, year: Number(carYear),
-          mileage: carMileage, details: carDetails, email: carEmail,
-          phone: carPhone, color: carColor, gearType: carGearType,
-          type: carType, price: Number(carPrice), image: carImage
-        } : car));
-      } else {
-        // Add new car
-        const newCar: Car = {
-          id: cars.length > 0 ? Math.max(...cars.map(car => car.id)) + 1 : 1,
-          name: carName, model: carModel, year: Number(carYear),
-          mileage: carMileage, details: carDetails, email: carEmail,
-          phone: carPhone, color: carColor, gearType: carGearType,
-          type: carType, price: Number(carPrice), image: carImage
-        };
-        setCars([...cars, newCar]);
+    
+    try {
+      let imagePaths = [...carImages];
+      if (imageFiles.length > 0) {
+        const uploadedPaths = await uploadImages();
+        imagePaths = [...imagePaths, ...uploadedPaths];
       }
+      
+      const carData = {
+        name: carName,
+        model: carModel,
+        year: Number(carYear),
+        mileage: carMileage,
+        details: carDetails,
+        sellerEmail: carEmail,
+        sellerPhone: carPhone, // Send as sellerPhone to match backend model
+        color: carColor,
+        gearType: carGearType,
+        type: carType,
+        price: Number(carPrice),
+        images: imagePaths,
+        role: 'admin',
+        status: 'approved'
+      };
+      
+      if (selectedCar && selectedCar._id) {
+        await axios.put(`${API_URL}/cars/${selectedCar._id}`, carData);
+      } else {
+        await axios.post(`${API_URL}/cars`, carData);
+      }
+      
+      fetchCars();
       setIsSubmitting(false);
       setOpenDialog(false);
-    }, 1000);
+    } catch (error) {
+      console.error('Error saving car:', error);
+      setIsSubmitting(false);
+    }
   };
+
+  const getStatusChip = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Chip size="small" icon={<CheckCircleIcon />} label="Approved" color="success" />;
+      case 'pending':
+        return <Chip size="small" label="Pending" color="warning" />;
+      case 'rejected':
+        return <Chip size="small" icon={<CancelIcon />} label="Rejected" color="error" />;
+      default:
+        return null;
+    }
+  };
+
+  const paginatedCars = cars.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   return (
     <Box>
       <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>Manage Cars</Typography>
+      
+      {/* Filter and Add buttons */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ flexWrap: 'wrap' }}>
           {['All', 'Sport', 'Classic', 'Hybrid/Electric'].map((type) => (
@@ -143,42 +283,93 @@ const ManageCars: React.FC = () => {
         </Button>
       </Box>
 
-      <Grid container spacing={2}>
-        {paginatedCars.map((car) => (
-          <Grid item xs={12} sm={6} md={4} key={car.id}>
-            <Card sx={{ borderRadius: 2, boxShadow: 2, height: '100%', backgroundColor: '#1c1c1c', color: 'white' }}>
-              <CardMedia component="img" image={car.image} alt={`${car.name} image`}
-                sx={{ height: 160, objectFit: 'cover' }} />
-              <CardContent>
-                <Typography variant="h6" noWrap>{car.name} - {car.model}</Typography>
-                <Typography variant="body2">Year: {car.year}</Typography>
-                <Typography variant="body2">Mileage: {car.mileage} km</Typography>
-                <Typography variant="body2">Color: {car.color}</Typography>
-                <Typography variant="body2">Type: {car.type}</Typography>
-                <Typography fontWeight="bold" color="primary">${car.price.toLocaleString()}</Typography>
-              </CardContent>
-              <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
-                <Button size="small" variant="outlined" startIcon={<EditIcon />}
-                  onClick={() => handleOpenEditDialog(car)}>Edit</Button>
-                <Button size="small" variant="outlined" color="error" startIcon={<DeleteIcon />}
-                  onClick={() => handleDelete(car.id)}>Delete</Button>
-              </Box>
-            </Card>
+      {/* Car listing */}
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          <Grid container spacing={2}>
+            {paginatedCars.map((car) => (
+              <Grid item xs={12} sm={6} md={4} key={car._id}>
+                <Card sx={{ borderRadius: 2, boxShadow: 2, height: '100%', backgroundColor: '#1c1c1c', color: 'white' }}>
+                  <CardMedia 
+                    component="img" 
+                    image={car.images && car.images.length > 0 
+                      ? `http://localhost:5000${car.images[0]}` 
+                      : '/src/assets/car-placeholder.jpg'} 
+                    alt={`${car.name} image`}
+                    sx={{ height: 160, objectFit: 'cover' }} 
+                  />
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="h6" noWrap>{car.name} - {car.model}</Typography>
+                      {getStatusChip(car.status)}
+                    </Box>
+                    <Typography variant="body2">Year: {car.year}</Typography>
+                    <Typography variant="body2">Mileage: {car.mileage} km</Typography>
+                    <Typography variant="body2">Color: {car.color}</Typography>
+                    <Typography variant="body2">Type: {car.type}</Typography>
+                    {car.sellerPhone && <Typography variant="body2">Phone: {car.sellerPhone}</Typography>}
+                    <Typography fontWeight="bold" color="primary">${car.price.toLocaleString()}</Typography>
+                  </CardContent>
+                  <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      startIcon={<PhotoLibraryIcon />}
+                      disabled={!car.images || car.images.length === 0}
+                      onClick={() => handleOpenGallery(car.images)}
+                    >
+                      Photos
+                    </Button>
+                    <Button size="small" variant="outlined" startIcon={<EditIcon />}
+                      onClick={() => handleOpenEditDialog(car)}>Edit</Button>
+                    <Button size="small" variant="outlined" color="error" startIcon={<DeleteIcon />}
+                      onClick={() => handleDelete(car._id!)}>Delete</Button>
+                  </Box>
+                  {car.status === 'pending' && (
+                    <Box sx={{ p: 2, pt: 0, display: 'flex', justifyContent: 'space-between' }}>
+                      <Button size="small" variant="contained" color="success"
+                        onClick={() => handleStatusChange(car._id!, 'approved')}>Approve</Button>
+                      <Button size="small" variant="contained" color="error"
+                        onClick={() => handleStatusChange(car._id!, 'rejected')}>Reject</Button>
+                    </Box>
+                  )}
+                </Card>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
 
-      {filteredCars.length > itemsPerPage && (
-        <Pagination count={Math.ceil(filteredCars.length / itemsPerPage)} page={page}
-          onChange={(_, value) => setPage(value)}
-          sx={{ mt: 3, display: 'flex', justifyContent: 'center' }} />
+          {cars.length === 0 && (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+              <Typography>No cars found. Add your first car or change the filter.</Typography>
+            </Box>
+          )}
+
+          {/* Pagination */}
+          {cars.length > itemsPerPage && (
+            <Pagination 
+              count={Math.ceil(cars.length / itemsPerPage)} 
+              page={page}
+              onChange={(_, value) => setPage(value)}
+              sx={{ mt: 3, display: 'flex', justifyContent: 'center' }} 
+            />
+          )}
+        </>
       )}
 
       {/* Add/Edit Car Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="md"
-        PaperProps={{ sx: { backgroundColor: 'rgba(0, 0, 0, 0.9)', color: 'white', borderRadius: 2 } }}>
+      <Dialog 
+        open={openDialog} 
+        onClose={() => setOpenDialog(false)} 
+        fullWidth 
+        maxWidth="md"
+        PaperProps={{ sx: { backgroundColor: 'rgba(0, 0, 0, 0.9)', color: 'white', borderRadius: 2 } }}
+      >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h5">{selectedCar ? 'Edit Car' : 'Add New Car'}</Typography>
+          {selectedCar ? 'Edit Car' : 'Add New Car'}
           <IconButton onClick={() => setOpenDialog(false)} sx={{ color: 'white' }}>
             <CloseIcon />
           </IconButton>
@@ -187,50 +378,65 @@ const ManageCars: React.FC = () => {
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
-                <TextField label="Car Name" value={carName} onChange={(e) => setCarName(e.target.value)}
+                <TextField 
+                  label="Car Name" value={carName} onChange={(e) => setCarName(e.target.value)}
                   fullWidth required InputProps={{ style: { color: 'white' } }}
-                  InputLabelProps={{ style: { color: '#aaa' } }} />
+                  InputLabelProps={{ style: { color: '#aaa' } }} 
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="Car Model" value={carModel} onChange={(e) => setCarModel(e.target.value)}
+                <TextField 
+                  label="Car Model" value={carModel} onChange={(e) => setCarModel(e.target.value)}
                   fullWidth required InputProps={{ style: { color: 'white' } }}
-                  InputLabelProps={{ style: { color: '#aaa' } }} />
+                  InputLabelProps={{ style: { color: '#aaa' } }} 
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="Car Year" type="number" value={carYear} onChange={(e) => setCarYear(e.target.value)}
+                <TextField 
+                  label="Car Year" type="number" value={carYear} onChange={(e) => setCarYear(e.target.value)}
                   fullWidth required InputProps={{ style: { color: 'white' } }}
-                  InputLabelProps={{ style: { color: '#aaa' } }} />
+                  InputLabelProps={{ style: { color: '#aaa' } }} 
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="Car Mileage (in km)" value={carMileage} onChange={(e) => setCarMileage(e.target.value)}
+                <TextField 
+                  label="Car Mileage (in km)" value={carMileage} onChange={(e) => setCarMileage(e.target.value)}
                   fullWidth required InputProps={{ style: { color: 'white' } }}
-                  InputLabelProps={{ style: { color: '#aaa' } }} />
+                  InputLabelProps={{ style: { color: '#aaa' } }} 
+                />
               </Grid>
               <Grid item xs={12}>
-                <TextField label="Car Details" value={carDetails} onChange={(e) => setCarDetails(e.target.value)}
+                <TextField 
+                  label="Car Details" value={carDetails} onChange={(e) => setCarDetails(e.target.value)}
                   multiline rows={3} fullWidth required InputProps={{ style: { color: 'white' } }}
-                  InputLabelProps={{ style: { color: '#aaa' } }} />
+                  InputLabelProps={{ style: { color: '#aaa' } }} 
+                />
               </Grid>
               <Grid item xs={12}>
-                <TextField label="Contact Email" value={carEmail} onChange={(e) => setCarEmail(e.target.value)}
+                <TextField 
+                  label="Contact Email" value={carEmail} onChange={(e) => setCarEmail(e.target.value)}
                   fullWidth required InputProps={{ style: { color: 'white' } }}
-                  InputLabelProps={{ style: { color: '#aaa' } }} />
+                  InputLabelProps={{ style: { color: '#aaa' } }} 
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="Phone Number" value={carPhone} onChange={(e) => setCarPhone(e.target.value)}
+                <TextField 
+                  label="Phone Number" value={carPhone} onChange={(e) => setCarPhone(e.target.value)}
                   fullWidth required InputProps={{ style: { color: 'white' } }}
-                  InputLabelProps={{ style: { color: '#aaa' } }} />
+                  InputLabelProps={{ style: { color: '#aaa' } }} 
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="Car Color" value={carColor} onChange={(e) => setCarColor(e.target.value)}
+                <TextField 
+                  label="Car Color" value={carColor} onChange={(e) => setCarColor(e.target.value)}
                   fullWidth required InputProps={{ style: { color: 'white' } }}
-                  InputLabelProps={{ style: { color: '#aaa' } }} />
+                  InputLabelProps={{ style: { color: '#aaa' } }} 
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth required>
                   <InputLabel sx={{ color: '#aaa' }}>Gear Type</InputLabel>
-                  <Select value={carGearType} onChange={(e) => setCarGearType(e.target.value)}
-                    inputProps={{ style: { color: 'white' } }}>
+                  <Select value={carGearType} onChange={(e) => setCarGearType(e.target.value)} inputProps={{ style: { color: 'white' } }}>
                     <MenuItem value="Automatic">Automatic</MenuItem>
                     <MenuItem value="Manual">Manual</MenuItem>
                   </Select>
@@ -239,8 +445,7 @@ const ManageCars: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth required>
                   <InputLabel sx={{ color: '#aaa' }}>Car Type</InputLabel>
-                  <Select value={carType} onChange={(e) => setCarType(e.target.value)}
-                    inputProps={{ style: { color: 'white' } }}>
+                  <Select value={carType} onChange={(e) => setCarType(e.target.value)} inputProps={{ style: { color: 'white' } }}>
                     <MenuItem value="Sport">Sport</MenuItem>
                     <MenuItem value="Classic">Classic</MenuItem>
                     <MenuItem value="Hybrid/Electric">Hybrid/Electric</MenuItem>
@@ -248,27 +453,83 @@ const ManageCars: React.FC = () => {
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField label="Price ($)" type="number" value={carPrice} onChange={(e) => setCarPrice(e.target.value)}
+                <TextField 
+                  label="Price ($)" type="number" value={carPrice} onChange={(e) => setCarPrice(e.target.value)}
                   fullWidth required InputProps={{ style: { color: 'white' } }}
-                  InputLabelProps={{ style: { color: '#aaa' } }} />
+                  InputLabelProps={{ style: { color: '#aaa' } }} 
+                />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <InputLabel sx={{ color: 'white', mb: 1 }}>Car Image</InputLabel>
-                <input type="file" accept="image/*" style={{ color: 'white' }} />
-                <Typography variant="caption" sx={{ color: '#aaa', display: 'block', mt: 1 }}>
-                  Using default image path for demo
-                </Typography>
+              <Grid item xs={12}>
+                <InputLabel sx={{ color: 'white', mb: 1 }}>Car Images (Select multiple files)</InputLabel>
+                <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ color: 'white' }} />
+                
+                {/* Selected image previews */}
+                {selectedImages.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>New Selected Images:</Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {selectedImages.map((img, index) => (
+                        <Box key={`new-${index}`} component="img" src={img.preview}
+                          sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+                
+                {/* Existing images */}
+                {carImages.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>Current Images:</Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {carImages.map((img, index) => (
+                        <Box key={`existing-${index}`} component="img" src={`http://localhost:5000${img}`}
+                          sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
               </Grid>
             </Grid>
           </form>
         </DialogContent>
         <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
           <Button onClick={() => setOpenDialog(false)} sx={{ color: 'white' }}>Cancel</Button>
-          <Button variant="contained" color="primary" onClick={handleSubmit} disabled={isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={20} /> : null}>
+          <Button 
+            variant="contained" color="primary" onClick={handleSubmit} disabled={isSubmitting}
+            startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+          >
             {isSubmitting ? 'Saving...' : selectedCar ? 'Update Car' : 'Add Car'}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Image Gallery Dialog */}
+      <Dialog 
+        open={openGallery} onClose={() => setOpenGallery(false)} fullWidth maxWidth="md"
+        PaperProps={{ sx: { backgroundColor: 'rgba(0, 0, 0, 0.9)', color: 'white', borderRadius: 2 } }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Car Images
+          <IconButton onClick={() => setOpenGallery(false)} sx={{ color: 'white' }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {galleryImages.length > 0 ? (
+            <ImageList cols={2} gap={8}>
+              {galleryImages.map((img, index) => (
+                <ImageListItem key={index}>
+                  <img src={`http://localhost:5000${img}`} alt={`Car image ${index + 1}`} 
+                    loading="lazy" style={{ width: '100%', borderRadius: 4 }} />
+                </ImageListItem>
+              ))}
+            </ImageList>
+          ) : (
+            <Typography align="center">No images available for this car.</Typography>
+          )}
+        </DialogContent>
       </Dialog>
     </Box>
   );

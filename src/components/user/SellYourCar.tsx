@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Box,
@@ -15,9 +15,14 @@ import {
   CardMedia,
   IconButton,
   Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useNavigate } from 'react-router-dom';
 
 const SellYourCar: React.FC = () => {
   const [carName, setCarName] = useState('');
@@ -25,6 +30,7 @@ const SellYourCar: React.FC = () => {
   const [carYear, setCarYear] = useState('');
   const [carMileage, setCarMileage] = useState('');
   const [carDetails, setCarDetails] = useState('');
+  const [carPrice, setCarPrice] = useState('');
   const [carEmail, setCarEmail] = useState('');
   const [carPhone, setCarPhone] = useState('');
   const [carColor, setCarColor] = useState('');
@@ -35,7 +41,60 @@ const SellYourCar: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showSubmissions, setShowSubmissions] = useState(false);
-  const [submittedForms, setSubmittedForms] = useState<any[]>([]);
+  const [userCars, setUserCars] = useState<any[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+      const userEmail = localStorage.getItem('email');
+      const userPhone = localStorage.getItem('phone');
+      setCarEmail(userEmail || '');
+      setCarPhone(userPhone || '');
+      
+      // Load user's submissions
+      if (showSubmissions) {
+        fetchUserCars();
+      }
+    }
+  }, [showSubmissions]);
+
+  const fetchUserCars = async () => {
+    try {
+      setLoading(true);
+      const userEmail = localStorage.getItem('email');
+      const token = localStorage.getItem('token');
+      
+      console.log('Fetching cars with email:', userEmail);
+      
+      // Fetch cars filtered by email directly from the server
+      const response = await fetch(`http://localhost:5000/api/cars?email=${encodeURIComponent(userEmail || '')}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('User cars fetched by email:', data);
+        setUserCars(data);
+      } else {
+        console.error('Failed to fetch cars');
+        setStatus('Failed to load your submissions. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error fetching user cars:', error);
+      setStatus('Error loading your submissions. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -49,43 +108,159 @@ const SellYourCar: React.FC = () => {
     setCarImages(newImages);
   };
 
+  const handleLoginRedirect = () => {
+    setLoginDialogOpen(false);
+    navigate('/sign-in');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if user is logged in
+    if (!isLoggedIn) {
+      setLoginDialogOpen(true);
+      return;
+    }
+    
     setIsSubmitting(true);
-    setStatus('Submitting your request...');
+    setStatus('Uploading images...');
 
-    const formData = {
-      carName,
-      carModel,
-      carYear,
-      carMileage,
-      carDetails,
-      carEmail,
-      carPhone,
-      carColor,
-      carGearType,
-      carType,
-      carImages: carImages.map((img) => URL.createObjectURL(img)),
-      submissionStatus: 'Pending Review',
-      submissionDate: new Date().toLocaleDateString()
-    };
-
-    setTimeout(() => {
-      setSubmittedForms([...submittedForms, formData]);
-      setStatus('Your car listing request has been submitted successfully!');
-      setIsSubmitting(false);
+    try {
+      // First upload the images
+      let uploadedImagePaths: string[] = [];
+      
+      if (carImages.length > 0) {
+        const formData = new FormData();
+        carImages.forEach(image => {
+          formData.append('images', image);
+        });
+        
+        const uploadResponse = await fetch('http://localhost:5000/api/cars/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload images');
+        }
+        
+        const uploadResult = await uploadResponse.json();
+        uploadedImagePaths = uploadResult.files;
+      }
+      
+      setStatus('Submitting your car listing...');
+      
+      const userId = localStorage.getItem('userId');
+      console.log('Submitting with userId:', userId);
+      
+      // Prepare car data matching the expected backend structure
+      const carData = {
+        name: carName,
+        model: carModel,
+        year: carYear,
+        mileage: carMileage,
+        details: carDetails,
+        price: carPrice,
+        sellerEmail: carEmail,
+        sellerPhone: carPhone,
+        color: carColor,
+        gearType: carGearType,
+        type: carType,
+        images: uploadedImagePaths,
+        userId: userId,
+        sellerId: userId,
+        user: userId,
+        seller: userId,
+        role: localStorage.getItem('role')
+      };
+      
+      console.log('Submitting car data:', carData);
+      
+      // Submit the car data
+      const submitResponse = await fetch('http://localhost:5000/api/cars', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(carData)
+      });
+      
+      if (!submitResponse.ok) {
+        const errorData = await submitResponse.json();
+        throw new Error(errorData.message || 'Failed to submit car listing');
+      }
+      
+      const newCar = await submitResponse.json();
+      console.log('Car submitted successfully:', newCar);
+      
+      setStatus('Your car listing has been submitted successfully!');
+      
+      // Reset form and show submissions after success
       setTimeout(() => {
         resetForm();
         setShowForm(false);
         setShowSubmissions(true);
+        // Fetch user cars after successful submission
+        fetchUserCars();
       }, 2000);
-    }, 1500);
+    } catch (error: any) {
+      console.error('Error submitting car:', error);
+      setStatus(`Error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
-    setCarName(''); setCarModel(''); setCarYear(''); setCarMileage('');
-    setCarDetails(''); setCarEmail(''); setCarPhone(''); setCarColor('');
-    setCarGearType(''); setCarType(''); setCarImages([]);
+    setCarName(''); 
+    setCarModel(''); 
+    setCarYear(''); 
+    setCarMileage('');
+    setCarDetails(''); 
+    setCarPrice('');
+    setCarColor(''); 
+    setCarGearType(''); 
+    setCarType(''); 
+    setCarImages([]);
+  };
+
+  const handleShowForm = () => {
+    // Check if user is logged in before showing form
+    if (!isLoggedIn) {
+      setLoginDialogOpen(true);
+      return;
+    }
+    setShowForm(true);
+    setShowSubmissions(false);
+  };
+  
+  const handleShowSubmissions = () => {
+    // Check if user is logged in before showing submissions
+    if (!isLoggedIn) {
+      setLoginDialogOpen(true);
+      return;
+    }
+    setShowForm(false);
+    setShowSubmissions(true);
+  };
+
+  // Helper function to get full image URL
+  const getFullImageUrl = (imagePath: string) => {
+    if (!imagePath) return '';
+    
+    // If the path already starts with http, return as is
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    
+    // Check if path starts with /uploads
+    if (imagePath.startsWith('/uploads')) {
+      return `http://localhost:5000${imagePath}`;
+    }
+    
+    // Otherwise, just return the path
+    return imagePath;
   };
 
   const renderInitialButtons = () => (
@@ -94,7 +269,7 @@ const SellYourCar: React.FC = () => {
       <Button
         variant="contained"
         color="primary"
-        onClick={() => { setShowForm(true); setShowSubmissions(false); }}
+        onClick={handleShowForm}
         sx={{ m: 2, px: 4, py: 1.5 }}
         size="large"
       >
@@ -103,7 +278,7 @@ const SellYourCar: React.FC = () => {
       <Button
         variant="outlined"
         color="secondary"
-        onClick={() => { setShowForm(false); setShowSubmissions(true); }}
+        onClick={handleShowSubmissions}
         sx={{ m: 2, px: 4, py: 1.5 }}
         size="large"
       >
@@ -140,21 +315,35 @@ const SellYourCar: React.FC = () => {
             <TextField label="Car Mileage (in km)" type="number" value={carMileage} onChange={(e) => setCarMileage(e.target.value)}
               fullWidth required InputProps={{ style: { color: 'white' } }} />
           </Grid>
-          <Grid item xs={12}>
-            <TextField label="Car Details" value={carDetails} onChange={(e) => setCarDetails(e.target.value)}
-              fullWidth multiline rows={3} required InputProps={{ style: { color: 'white' } }} />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField label="Email/Username" value={carEmail} onChange={(e) => setCarEmail(e.target.value)}
-              fullWidth required InputProps={{ style: { color: 'white' } }} />
-          </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField label="Phone Number" value={carPhone} onChange={(e) => setCarPhone(e.target.value)}
+            <TextField label="Car Price ($)" type="number" value={carPrice} onChange={(e) => setCarPrice(e.target.value)}
               fullWidth required InputProps={{ style: { color: 'white' } }} />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField label="Car Color" value={carColor} onChange={(e) => setCarColor(e.target.value)}
               fullWidth required InputProps={{ style: { color: 'white' } }} />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField label="Car Details" value={carDetails} onChange={(e) => setCarDetails(e.target.value)}
+              fullWidth multiline rows={3} required InputProps={{ style: { color: 'white' } }} />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField 
+              label="Email/Username" 
+              value={carEmail} 
+              fullWidth required 
+              disabled // Disabled since it's auto-populated
+              InputProps={{ style: { color: 'white' } }} 
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField 
+              label="Phone Number" 
+              value={carPhone} 
+              fullWidth required 
+              disabled // Disabled since it's auto-populated
+              InputProps={{ style: { color: 'white' } }} 
+            />
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth required>
@@ -182,7 +371,7 @@ const SellYourCar: React.FC = () => {
             <input type="file" multiple onChange={handleImageChange} accept="image/*" />
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
               {carImages.map((image, index) => (
-                <Box key={URL.createObjectURL(image)} sx={{ position: 'relative' }}>
+                <Box key={index} sx={{ position: 'relative' }}>
                   <img
                     src={URL.createObjectURL(image)}
                     alt="Car"
@@ -228,32 +417,68 @@ const SellYourCar: React.FC = () => {
       <Button startIcon={<ArrowBackIcon />} onClick={() => setShowSubmissions(false)} sx={{ mb: 3 }}>Back</Button>
       <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>Your Car Listings</Typography>
       
-      {submittedForms.length === 0 ? (
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : userCars.length === 0 ? (
         <Typography color="white" sx={{ textAlign: 'center' }}>
           You have no submissions yet.
         </Typography>
       ) : (
         <Grid container spacing={3}>
-          {submittedForms.map((form, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
+          {userCars.map((car) => (
+            <Grid item xs={12} sm={6} md={4} key={car._id}>
               <Card sx={{ backgroundColor: '#1c1c1c', color: 'white', height: '100%' }}>
-                {form.carImages.length > 0 && (
+                {car.images && car.images.length > 0 ? (
                   <CardMedia
                     component="img"
                     height="160"
-                    image={form.carImages[0]}
-                    alt={form.carName}
+                    image={getFullImageUrl(car.images[0])}
+                    alt={car.name}
+                    sx={{ objectFit: 'cover' }}
+                    onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/src/assets/car-placeholder.jpg'; // Set a placeholder image on error
+                      target.onerror = null; // Prevent infinite error loop
+                    }}
+                  />
+                ) : (
+                  <CardMedia
+                    component="img"
+                    height="160"
+                    image="/src/assets/car-placeholder.jpg"
+                    alt="No image available"
                     sx={{ objectFit: 'cover' }}
                   />
                 )}
                 <CardContent>
-                  <Typography variant="h6">{form.carName} {form.carModel}</Typography>
-                  <Typography variant="body2">Year: {form.carYear}</Typography>
-                  <Typography variant="body2">Mileage: {form.carMileage} km</Typography>
-                  <Typography variant="body2">Type: {form.carType}</Typography>
-                  <Typography variant="body2" sx={{ color: form.submissionStatus === 'Pending Review' ? 'orange' : 'green' }}>
-                    Status: {form.submissionStatus}
+                  <Typography variant="h6">{car.name} {car.model}</Typography>
+                  <Typography variant="body2">Year: {car.year}</Typography>
+                  <Typography variant="body2">Mileage: {car.mileage} km</Typography>
+                  <Typography variant="body2">Price: ${car.price}</Typography>
+                  <Typography variant="body2">Type: {car.type}</Typography>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: car.status === 'pending' 
+                        ? 'orange' 
+                        : car.status === 'approved' 
+                          ? 'green' 
+                          : 'red' 
+                    }}
+                  >
+                    Status: {car.status === 'pending' 
+                      ? 'Pending Review' 
+                      : car.status === 'approved' 
+                        ? 'Approved' 
+                        : 'Rejected'}
                   </Typography>
+                  {car.createdAt && (
+                    <Typography variant="body2">
+                      Submitted: {new Date(car.createdAt).toLocaleDateString()}
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
@@ -261,6 +486,26 @@ const SellYourCar: React.FC = () => {
         </Grid>
       )}
     </Box>
+  );
+
+  // Login Dialog
+  const renderLoginDialog = () => (
+    <Dialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)}>
+      <DialogTitle>Login Required</DialogTitle>
+      <DialogContent>
+        <Typography>
+          You need to be logged in to {showSubmissions ? 'view your submissions' : 'sell your car'}.
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setLoginDialogOpen(false)} color="secondary">
+          Cancel
+        </Button>
+        <Button onClick={handleLoginRedirect} color="primary" variant="contained">
+          Go to Login
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 
   return (
@@ -293,6 +538,7 @@ const SellYourCar: React.FC = () => {
         {!showForm && !showSubmissions && renderInitialButtons()}
         {showForm && renderForm()}
         {showSubmissions && renderSubmissions()}
+        {renderLoginDialog()}
       </Box>
     </Box>
   );

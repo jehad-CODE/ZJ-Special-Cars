@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Serve images statically from the 'uploads' directory
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 const carRoutes = require('./routes/Cars');
@@ -72,6 +72,13 @@ app.post('/api/car-accessories/upload', upload.array('images', 5), (req, res) =>
   const imagePaths = req.files.map(file => `/uploads/${file.filename}`);
   res.json({ message: 'Files uploaded successfully.', files: imagePaths });
 });
+
+// Create uploads folder if it doesn't exist
+const fs = require('fs');
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+  console.log('Created uploads directory');
+}
 
 // Database connection
 mongoose.connect('mongodb://localhost:27017/ZJSpecialCars', {
