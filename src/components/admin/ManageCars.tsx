@@ -23,7 +23,7 @@ interface Car {
   mileage: string;
   details: string;
   sellerEmail: string;
-  sellerPhone: string; // Updated to match backend model
+  sellerPhone: string; 
   color: string;
   gearType: string;
   type: string;
