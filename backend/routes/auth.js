@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-// update the login route
+
 router.post('/login', async (req, res) => {
     try {
       const { email, password } = req.body;

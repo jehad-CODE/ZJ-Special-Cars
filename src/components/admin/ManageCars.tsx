@@ -125,7 +125,6 @@ const ManageCars: React.FC = () => {
     setCarMileage(car.mileage);
     setCarDetails(car.details);
     setCarEmail(car.sellerEmail);
-    // Use sellerPhone from backend
     setCarPhone(car.sellerPhone || '');
     setCarColor(car.color);
     setCarGearType(car.gearType);
@@ -179,6 +178,18 @@ const ManageCars: React.FC = () => {
     }
   };
 
+  const handleRemoveCurrentImage = (indexToRemove: number) => {
+    setCarImages(carImages.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleRemoveSelectedImage = (indexToRemove: number) => {
+    const newSelectedImages = selectedImages.filter((_, index) => index !== indexToRemove);
+    setSelectedImages(newSelectedImages);
+    
+    const newImageFiles = imageFiles.filter((_, index) => index !== indexToRemove);
+    setImageFiles(newImageFiles);
+  };
+
   const uploadImages = async () => {
     if (imageFiles.length === 0) return [];
     
@@ -214,7 +225,7 @@ const ManageCars: React.FC = () => {
       let imagePaths = [...carImages];
       if (imageFiles.length > 0) {
         const uploadedPaths = await uploadImages();
-        imagePaths = [...imagePaths, ...uploadedPaths];
+        imagePaths = [...uploadedPaths, ...imagePaths]; // Add new images to beginning
       }
       
       const carData = {
@@ -224,7 +235,7 @@ const ManageCars: React.FC = () => {
         mileage: carMileage,
         details: carDetails,
         sellerEmail: carEmail,
-        sellerPhone: carPhone, // Send as sellerPhone to match backend model
+        sellerPhone: carPhone,
         color: carColor,
         gearType: carGearType,
         type: carType,
@@ -462,16 +473,41 @@ const ManageCars: React.FC = () => {
               <Grid item xs={12}>
                 <InputLabel sx={{ color: 'white', mb: 1 }}>Car Images (Select multiple files)</InputLabel>
                 <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ color: 'white' }} />
+                <Typography variant="caption" sx={{ color: '#aaa', display: 'block', mt: 1 }}>
+                  No limit on number of images. You can upload as many as needed.
+                </Typography>
                 
                 {/* Selected image previews */}
                 {selectedImages.length > 0 && (
                   <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>New Selected Images:</Typography>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      New Selected Images ({selectedImages.length}):
+                    </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {selectedImages.map((img, index) => (
-                        <Box key={`new-${index}`} component="img" src={img.preview}
-                          sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }}
-                        />
+                        <Box key={`new-${index}`} sx={{ position: 'relative' }}>
+                          <Box 
+                            component="img" 
+                            src={img.preview}
+                            sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }}
+                          />
+                          <IconButton
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: -8,
+                              right: -8,
+                              backgroundColor: 'red',
+                              color: 'white',
+                              '&:hover': { backgroundColor: 'darkred' },
+                              padding: '2px',
+                              minWidth: 'unset'
+                            }}
+                            onClick={() => handleRemoveSelectedImage(index)}
+                          >
+                            <CloseIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        </Box>
                       ))}
                     </Box>
                   </Box>
@@ -480,12 +516,34 @@ const ManageCars: React.FC = () => {
                 {/* Existing images */}
                 {carImages.length > 0 && (
                   <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>Current Images:</Typography>
+                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                      Current Images ({carImages.length}):
+                    </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {carImages.map((img, index) => (
-                        <Box key={`existing-${index}`} component="img" src={`http://localhost:5000${img}`}
-                          sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }}
-                        />
+                        <Box key={`existing-${index}`} sx={{ position: 'relative' }}>
+                          <Box 
+                            component="img" 
+                            src={`http://localhost:5000${img}`}
+                            sx={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 1 }}
+                          />
+                          <IconButton
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: -8,
+                              right: -8,
+                              backgroundColor: 'red',
+                              color: 'white',
+                              '&:hover': { backgroundColor: 'darkred' },
+                              padding: '2px',
+                              minWidth: 'unset'
+                            }}
+                            onClick={() => handleRemoveCurrentImage(index)}
+                          >
+                            <CloseIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        </Box>
                       ))}
                     </Box>
                   </Box>

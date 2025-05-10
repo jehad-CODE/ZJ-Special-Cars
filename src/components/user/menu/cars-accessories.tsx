@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Box, Typography, Grid, Paper, Button, Pagination, Dialog, 
-  DialogActions, DialogContent, DialogTitle, IconButton, CircularProgress
+  DialogActions, DialogContent, DialogTitle, IconButton,
 } from '@mui/material';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import BuildIcon from '@mui/icons-material/Build';
+import BrokenImageIcon from '@mui/icons-material/BrokenImage';
 
-// Define accessory interface for TypeScript
 interface Accessory {
   _id: string;
   name: string;
@@ -24,8 +24,7 @@ interface Accessory {
   updatedAt?: string;
 }
 
-// API base URL
-const API_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000';
 
 const CarsAccessories: React.FC = () => {
   const [accessories, setAccessories] = useState<Accessory[]>([]);
@@ -35,29 +34,51 @@ const CarsAccessories: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [currentAccessory, setCurrentAccessory] = useState<Accessory | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageError, setImageError] = useState<Record<string, boolean>>({});
+  
+  // Sort options
+  const [sortBy, setSortBy] = useState('newest');
 
-  // Fetch accessories from API
+  const accessoriesPerPage = 9;
+  const startIndex = (page - 1) * accessoriesPerPage;
+  
+  // Sort accessories based on selection
+  const sortAccessories = (accessories: Accessory[]) => {
+    switch(sortBy) {
+      case 'priceAsc':
+        return [...accessories].sort((a, b) => 
+          Number(a.price.replace(/[^0-9]/g, '')) - Number(b.price.replace(/[^0-9]/g, '')));
+      case 'priceDesc':
+        return [...accessories].sort((a, b) => 
+          Number(b.price.replace(/[^0-9]/g, '')) - Number(a.price.replace(/[^0-9]/g, '')));
+      case 'nameAZ':
+        return [...accessories].sort((a, b) => a.name.localeCompare(b.name));
+      case 'nameZA':
+        return [...accessories].sort((a, b) => b.name.localeCompare(a.name));
+      case 'newest':
+      default:
+        return [...accessories].sort((a, b) => 
+          new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
+    }
+  };
+  
+  const sortedAccessories = sortAccessories(accessories);
+  const currentAccessories = sortedAccessories.slice(startIndex, startIndex + accessoriesPerPage);
+
   useEffect(() => {
-    const fetchAccessories = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`${API_URL}/car-accessories`);
+    setLoading(true);
+    axios.get(`${API_BASE_URL}/api/car-accessories`)
+      .then(response => {
         setAccessories(response.data);
         setError(null);
-      } catch (err) {
-        console.error('Error fetching accessories:', err);
-        setError('Failed to load accessories. Please try again later.');
-      } finally {
         setLoading(false);
-      }
-    };
-
-    fetchAccessories();
+      })
+      .catch(error => {
+        console.error('Error fetching accessories:', error);
+        setError('Failed to load accessories. Please try again later.');
+        setLoading(false);
+      });
   }, []);
-
-  const accessoriesPerPage = 6;
-  const startIndex = (page - 1) * accessoriesPerPage;
-  const currentAccessories = accessories.slice(startIndex, startIndex + accessoriesPerPage);
 
   const handleOpenModal = (accessory: Accessory) => {
     setCurrentAccessory(accessory);
@@ -77,23 +98,99 @@ const CarsAccessories: React.FC = () => {
     }
   };
 
+  // Helper function to get full image URL
+  const getImageUrl = (imagePath: string) => {
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+    return `${API_BASE_URL}${normalizedPath}`;
+  };
+
+  // Handle image loading error
+  const handleImageError = (id: string) => {
+    setImageError(prev => ({
+      ...prev,
+      [id]: true
+    }));
+  };
+
   return (
     <Box sx={{
       padding: { xs: 2, sm: 3, md: 4 },
       backgroundColor: 'black',
       backgroundSize: 'cover',
       color: 'white',
-      height: '100vh',
+      minHeight: '100vh',
       overflowY: 'auto',
     }}>
-      <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 4, textAlign: 'center' }}>
-        Cars Accessories
-      </Typography>
+      {/* Sort selector - enhanced design */}
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        mb: 3,
+        mt: 2
+      }}>
+        <Box sx={{ 
+          background: 'linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%)',
+          borderRadius: '10px', 
+          padding: '8px 16px',
+          display: 'flex', 
+          alignItems: 'center',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.4)',
+          border: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          <Typography variant="body1" sx={{ 
+            mr: 2, 
+            fontWeight: 500,
+            color: '#e0e0e0'
+          }}>
+            Sort by:
+          </Typography>
+          <Box sx={{
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              top: '50%',
+              right: '10px',
+              transform: 'translateY(-50%)',
+              width: 0,
+              height: 0,
+              borderLeft: '5px solid transparent',
+              borderRight: '5px solid transparent',
+              borderTop: '5px solid #e0e0e0',
+              pointerEvents: 'none'
+            }
+          }}>
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{ 
+                background: 'rgba(20,20,30,0.8)',
+                color: '#e0e0e0',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '6px',
+                padding: '8px 30px 8px 12px',
+                fontSize: '15px',
+                appearance: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.2)'
+              }}
+            >
+              <option value="newest">Newest</option>
+              <option value="priceAsc">Price (Low to High)</option>
+              <option value="priceDesc">Price (High to Low)</option>
+              <option value="nameAZ">Name (A to Z)</option>
+              <option value="nameZA">Name (Z to A)</option>
+            </select>
+          </Box>
+        </Box>
+      </Box>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-          <CircularProgress color="primary" />
-        </Box>
+        <Typography variant="h6" sx={{ textAlign: 'center' }}>Loading accessories...</Typography>
       ) : error ? (
         <Box sx={{ textAlign: 'center', my: 4 }}>
           <Typography variant="h6" color="error">{error}</Typography>
@@ -107,9 +204,7 @@ const CarsAccessories: React.FC = () => {
           </Button>
         </Box>
       ) : accessories.length === 0 ? (
-        <Box sx={{ textAlign: 'center', my: 4 }}>
-          <Typography variant="h6">No accessories found</Typography>
-        </Box>
+        <Typography variant="h6" sx={{ textAlign: 'center' }}>No accessories available at the moment.</Typography>
       ) : (
         <>
           <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -121,22 +216,54 @@ const CarsAccessories: React.FC = () => {
                   textAlign: 'center', 
                   backgroundColor: '#333',
                   transition: 'transform 0.3s',
-                  '&:hover': { transform: 'scale(1.02)' }
+                  '&:hover': { transform: 'scale(1.02)' },
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}>
-                  <img
-                    src={accessory.images[0]}
-                    alt={accessory.name}
-                    style={{ width: '100%', borderRadius: '8px', height: '180px', objectFit: 'cover' }}
-                  />
-                  <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
-                    {accessory.name}
-                  </Typography>
-                  <Typography variant="body1" sx={{ color: 'lightgray' }}>
-                    {accessory.brand}
-                  </Typography>
-                  <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
-                    {accessory.price}
-                  </Typography>
+                  {accessory.images && accessory.images.length > 0 && !imageError[accessory._id] ? (
+                    <Box sx={{ 
+                      width: '100%', 
+                      height: '180px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}>
+                      <img
+                        src={getImageUrl(accessory.images[0])}
+                        alt={accessory.name}
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover' 
+                        }}
+                        onError={() => handleImageError(accessory._id)}
+                      />
+                    </Box>
+                  ) : (
+                    <Box sx={{ 
+                      width: '100%', 
+                      height: '180px',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: '#555'
+                    }}>
+                      <BrokenImageIcon sx={{ fontSize: 60, color: '#999' }} />
+                    </Box>
+                  )}
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
+                      {accessory.name}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: 'lightgray' }}>
+                      {accessory.brand}
+                    </Typography>
+                    <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
+                      {accessory.price}
+                    </Typography>
+                  </Box>
                   <Button 
                     variant="contained" 
                     color="primary" 
@@ -152,7 +279,7 @@ const CarsAccessories: React.FC = () => {
             ))}
           </Grid>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4, flexDirection: 'column', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4 }}>
             <Pagination
               count={Math.ceil(accessories.length / accessoriesPerPage)}
               page={page}
@@ -160,9 +287,6 @@ const CarsAccessories: React.FC = () => {
               color="primary"
               sx={{ '& .MuiPaginationItem-root': { color: 'white' } }}
             />
-            <Typography variant="body2" sx={{ mt: 1, color: 'gray' }}>
-              Page {page} of {Math.ceil(accessories.length / accessoriesPerPage)}
-            </Typography>
           </Box>
         </>
       )}
@@ -174,76 +298,156 @@ const CarsAccessories: React.FC = () => {
         fullWidth
         PaperProps={{ sx: { borderRadius: 2, backgroundColor: '#1c1c1c', color: 'white' } }}
       >
-        <DialogTitle>{currentAccessory?.name}</DialogTitle>
-        <DialogContent dividers>
-          {currentAccessory && (
-            <>
+        {currentAccessory && (
+          <>
+            <DialogTitle>{currentAccessory.name}</DialogTitle>
+            <DialogContent dividers>
               {/* Image carousel */}
               <Box sx={{ position: 'relative', mb: 3, textAlign: 'center' }}>
-                <img
-                  src={currentAccessory.images[currentImageIndex]}
-                  alt={`${currentAccessory.name}`}
-                  style={{ maxWidth: '100%', borderRadius: '8px', maxHeight: '300px' }}
-                />
-                
-                {currentAccessory.images.length > 1 && (
+                {currentAccessory.images && currentAccessory.images.length > 0 ? (
                   <>
-                    <IconButton 
-                      onClick={handlePrevImage}
-                      disabled={currentImageIndex === 0}
-                      sx={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}
-                    >
-                      <ArrowBackIosIcon />
-                    </IconButton>
-                    <IconButton 
-                      onClick={handleNextImage}
-                      disabled={currentImageIndex === currentAccessory.images.length - 1}
-                      sx={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}
-                    >
-                      <ArrowForwardIosIcon />
-                    </IconButton>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      {currentImageIndex + 1} / {currentAccessory.images.length}
-                    </Typography>
+                    <img
+                      src={getImageUrl(currentAccessory.images[currentImageIndex])}
+                      alt={currentAccessory.name}
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '300px', 
+                        objectFit: 'contain',
+                        borderRadius: '8px' 
+                      }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('div');
+                          fallback.style.width = '100%';
+                          fallback.style.height = '300px';
+                          fallback.style.display = 'flex';
+                          fallback.style.alignItems = 'center';
+                          fallback.style.justifyContent = 'center';
+                          fallback.style.backgroundColor = '#555';
+                          fallback.style.borderRadius = '8px';
+                          
+                          const icon = document.createElement('div');
+                          icon.innerHTML = `<svg width="60" height="60" viewBox="0 0 24 24" fill="#999">
+                            <path d="M21 5v6.59l-3-3.01-4 4.01-4-4-4 4-3-3.01V5c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2zm-3 6.42l3 3.01V19c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-6.58l3 2.99 4-4 4 4 4-4z"/>
+                          </svg>`;
+                          
+                          fallback.appendChild(icon);
+                          parent.appendChild(fallback);
+                        }
+                      }}
+                    />
+                    
+                    {currentAccessory.images.length > 1 && (
+                      <>
+                        <IconButton 
+                          onClick={handlePrevImage}
+                          disabled={currentImageIndex === 0}
+                          sx={{ 
+                            position: 'absolute', 
+                            left: 0, 
+                            top: '50%', 
+                            transform: 'translateY(-50%)',
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
+                            color: 'white'
+                          }}
+                        >
+                          <ArrowBackIosIcon />
+                        </IconButton>
+                        <IconButton 
+                          onClick={handleNextImage}
+                          disabled={currentImageIndex === currentAccessory.images.length - 1}
+                          sx={{ 
+                            position: 'absolute', 
+                            right: 0, 
+                            top: '50%', 
+                            transform: 'translateY(-50%)',
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            '&:hover': { backgroundColor: 'rgba(0,0,0,0.7)' },
+                            color: 'white'
+                          }}
+                        >
+                          <ArrowForwardIosIcon />
+                        </IconButton>
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                          {currentImageIndex + 1} / {currentAccessory.images.length}
+                        </Typography>
+                      </>
+                    )}
                   </>
+                ) : (
+                  <Box sx={{ 
+                    width: '100%', 
+                    height: '300px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#555',
+                    borderRadius: '8px'
+                  }}>
+                    <BrokenImageIcon sx={{ fontSize: 80, color: '#999' }} />
+                    <Typography variant="body2" sx={{ mt: 2 }}>No images available</Typography>
+                  </Box>
                 )}
               </Box>
               
-              {/* Accessory details - simplified two-column layout */}
+              {/* Accessory details - two-column layout */}
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">Price:</Typography>
-                  <Typography variant="body1" sx={{ color: 'green' }}>{currentAccessory.price}</Typography>
+                  <Typography variant="body1" sx={{ color: 'green', fontWeight: 'bold' }}>
+                    {currentAccessory.price}
+                  </Typography>
                   
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Brand:</Typography>
                   <Typography variant="body1">{currentAccessory.brand}</Typography>
                   
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Category:</Typography>
                   <Typography variant="body1">{currentAccessory.category}</Typography>
+                  
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Compatibility:</Typography>
+                  <Typography variant="body1">{currentAccessory.compatibility}</Typography>
                 </Grid>
                 
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Compatibility:</Typography>
-                  <Typography variant="body1">{currentAccessory.compatibility}</Typography>
-                  
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Installation:</Typography>
+                  <Typography variant="subtitle2" color="text.secondary">Installation:</Typography>
                   <Typography variant="body1">{currentAccessory.installation}</Typography>
                   
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Seller Contact:</Typography>
                   <Typography variant="body1">{currentAccessory.sellerContact}</Typography>
-                </Grid>
-                
-                <Grid item xs={12}>
+                  
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Details:</Typography>
-                  <Typography variant="body1">{currentAccessory.details}</Typography>
+                  <Typography variant="body1" sx={{ 
+                    maxHeight: '150px',
+                    overflowY: 'auto'
+                  }}>
+                    {currentAccessory.details}
+                  </Typography>
+                  
+                  {currentAccessory.createdAt && (
+                    <>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Listed On:</Typography>
+                      <Typography variant="body1">
+                        {new Date(currentAccessory.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </Typography>
+                    </>
+                  )}
                 </Grid>
               </Grid>
-            </>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)} color="primary" variant="contained">Close</Button>
-        </DialogActions>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpen(false)} color="primary" variant="contained">Close</Button>
+            </DialogActions>
+          </>
+        )}
       </Dialog>
     </Box>
   );
