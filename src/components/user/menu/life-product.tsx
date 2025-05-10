@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 import { 
   Box, Typography, Grid, Paper, Button, Pagination, Dialog, 
   DialogActions, DialogContent, DialogTitle, IconButton, CircularProgress
@@ -37,6 +38,8 @@ const LifeProduct: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState<Record<string, boolean>>({});
   
+  const location = useLocation();
+  
   // Sort state
   const [sortBy, setSortBy] = useState('newest');
 
@@ -58,6 +61,20 @@ const LifeProduct: React.FC = () => {
 
     fetchProducts();
   }, []);
+
+  // Handle opening selected item from search
+  useEffect(() => {
+    if (location.state?.selectedItem) {
+      const item = location.state.selectedItem;
+      const foundItem = products.find(product => product._id === item._id);
+      
+      if (foundItem) {
+        handleOpenModal(foundItem);
+        // Clear the state so it doesn't reopen on subsequent visits
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, products]);
 
   // Helper function to get full image URL
   const getImageUrl = (imagePath: string) => {
@@ -130,13 +147,13 @@ const LifeProduct: React.FC = () => {
       backgroundSize: 'cover',
       color: 'white',
       minHeight: '100vh',
-      overflowY: 'auto',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
     }}>
-      <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 4, textAlign: 'center' }}>
-        Life Products
-      </Typography>
-
-      {/* Sort selector - matching Classic component style */}
+      
+      {/* Sort selector */}
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'center', 
@@ -200,114 +217,126 @@ const LifeProduct: React.FC = () => {
         </Box>
       </Box>
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-          <CircularProgress color="primary" />
-        </Box>
-      ) : error ? (
-        <Box sx={{ textAlign: 'center', my: 4 }}>
-          <Typography variant="h6" color="error">{error}</Typography>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            sx={{ mt: 2 }} 
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </Button>
-        </Box>
-      ) : products.length === 0 ? (
-        <Box sx={{ textAlign: 'center', my: 4 }}>
-          <Typography variant="h6">No products found</Typography>
-        </Box>
-      ) : (
-        <>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {currentProducts.map((product) => (
-              <Grid item xs={12} sm={6} md={4} key={product._id}>
-                <Paper elevation={4} sx={{ 
-                  borderRadius: 3, 
-                  padding: 2, 
-                  textAlign: 'center', 
-                  backgroundColor: '#333',
-                  transition: 'transform 0.3s',
-                  '&:hover': { transform: 'scale(1.02)' },
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  {product.images && product.images.length > 0 && !imageError[product._id] ? (
-                    <Box sx={{ 
-                      width: '100%', 
-                      height: '180px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      position: 'relative'
-                    }}>
-                      <img
-                        src={getImageUrl(product.images[0])}
-                        alt={product.name}
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          objectFit: 'cover' 
-                        }}
-                        onError={() => handleImageError(product._id)}
-                      />
-                    </Box>
-                  ) : (
-                    <Box sx={{ 
-                      width: '100%', 
-                      height: '180px',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#555'
-                    }}>
-                      <BrokenImageIcon sx={{ fontSize: 60, color: '#999' }} />
-                    </Box>
-                  )}
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
-                      {product.name}
-                    </Typography>
-                    <Typography variant="body1" sx={{ color: 'lightgray' }}>
-                      {product.brand}
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
-                      {product.price}
-                    </Typography>
-                  </Box>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    sx={{ mt: 2 }} 
-                    onClick={() => handleOpenModal(product)}
-                    fullWidth
-                  >
-                    <ShoppingBagIcon sx={{ mr: 1 }} />
-                    View Details
-                  </Button>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-
-          <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4, flexDirection: 'column', alignItems: 'center' }}>
-            <Pagination
-              count={Math.ceil(sortedProducts.length / productsPerPage)}
-              page={page}
-              onChange={(_, value) => setPage(value)}
-              color="primary"
-              sx={{ '& .MuiPaginationItem-root': { color: 'white' } }}
-            />
-            <Typography variant="body2" sx={{ mt: 1, color: 'gray' }}>
-              Page {page} of {Math.ceil(sortedProducts.length / productsPerPage)}
-            </Typography>
+      <Box sx={{ 
+        flex: 1, 
+        overflow: 'auto',
+        // Hide scrollbar for Chrome, Safari and Opera
+        '&::-webkit-scrollbar': {
+          display: 'none'
+        },
+        // Hide scrollbar for IE, Edge and Firefox
+        msOverflowStyle: 'none',
+        scrollbarWidth: 'none'
+      }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+            <CircularProgress color="primary" />
           </Box>
-        </>
-      )}
+        ) : error ? (
+          <Box sx={{ textAlign: 'center', my: 4 }}>
+            <Typography variant="h6" color="error">{error}</Typography>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              sx={{ mt: 2 }} 
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </Box>
+        ) : products.length === 0 ? (
+          <Box sx={{ textAlign: 'center', my: 4 }}>
+            <Typography variant="h6">No products found</Typography>
+          </Box>
+        ) : (
+          <>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {currentProducts.map((product) => (
+                <Grid item xs={12} sm={6} md={4} key={product._id}>
+                  <Paper elevation={4} sx={{ 
+                    borderRadius: 3, 
+                    padding: 2, 
+                    textAlign: 'center', 
+                    backgroundColor: '#333',
+                    transition: 'transform 0.3s',
+                    '&:hover': { transform: 'scale(1.02)' },
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    {product.images && product.images.length > 0 && !imageError[product._id] ? (
+                      <Box sx={{ 
+                        width: '100%', 
+                        height: '180px',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        position: 'relative'
+                      }}>
+                        <img
+                          src={getImageUrl(product.images[0])}
+                          alt={product.name}
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover' 
+                          }}
+                          onError={() => handleImageError(product._id)}
+                        />
+                      </Box>
+                    ) : (
+                      <Box sx={{ 
+                        width: '100%', 
+                        height: '180px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#555'
+                      }}>
+                        <BrokenImageIcon sx={{ fontSize: 60, color: '#999' }} />
+                      </Box>
+                    )}
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
+                        {product.name}
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'lightgray' }}>
+                        {product.brand}
+                      </Typography>
+                      <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
+                        {product.price}
+                      </Typography>
+                    </Box>
+                    <Button 
+                      variant="contained" 
+                      color="primary" 
+                      sx={{ mt: 2 }} 
+                      onClick={() => handleOpenModal(product)}
+                      fullWidth
+                    >
+                      <ShoppingBagIcon sx={{ mr: 1 }} />
+                      View Details
+                    </Button>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+
+            <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4, flexDirection: 'column', alignItems: 'center' }}>
+              <Pagination
+                count={Math.ceil(sortedProducts.length / productsPerPage)}
+                page={page}
+                onChange={(_, value) => setPage(value)}
+                color="primary"
+                sx={{ '& .MuiPaginationItem-root': { color: 'white' } }}
+              />
+              <Typography variant="body2" sx={{ mt: 1, color: 'gray' }}>
+                Page {page} of {Math.ceil(sortedProducts.length / productsPerPage)}
+              </Typography>
+            </Box>
+          </>
+        )}
+      </Box>
 
       <Dialog 
         open={open} 
@@ -413,7 +442,7 @@ const LifeProduct: React.FC = () => {
                 )}
               </Box>
               
-              {/* Product details - simplified two-column layout */}
+              {/* Product details - two-column layout */}
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">Price:</Typography>

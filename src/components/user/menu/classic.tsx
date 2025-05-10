@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 import { 
   Box, Typography, Grid, Paper, Button, Pagination, Dialog, 
   DialogActions, DialogContent, DialogTitle, IconButton
@@ -39,6 +40,8 @@ const Classic: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState<Record<string, boolean>>({});
+  
+  const location = useLocation();
 
   const carsPerPage = 9;
   const classicCars = cars.filter(car => car.type === 'Classic');
@@ -83,6 +86,20 @@ const Classic: React.FC = () => {
       });
   }, []);
 
+  // Handle opening selected item from search
+  useEffect(() => {
+    if (location.state?.selectedItem) {
+      const item = location.state.selectedItem;
+      const foundItem = cars.find(car => car._id === item._id);
+      
+      if (foundItem) {
+        handleOpenModal(foundItem);
+        // Clear the state so it doesn't reopen on subsequent visits
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, cars]);
+
   const handleOpenModal = (car: Car) => {
     setCurrentCar(car);
     setCurrentImageIndex(0);
@@ -125,9 +142,12 @@ const Classic: React.FC = () => {
       backgroundSize: 'cover',
       color: 'white',
       minHeight: '100vh',
-      overflowY: 'auto',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
     }}>
-      {/* Sort selector - enhanced design */}
+      {/* Sort selector */}
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'center', 
@@ -192,95 +212,107 @@ const Classic: React.FC = () => {
         </Box>
       </Box>
 
-      {loading ? (
-        <Typography variant="h6" sx={{ textAlign: 'center' }}>Loading cars...</Typography>
-      ) : classicCars.length === 0 ? (
-        <Typography variant="h6" sx={{ textAlign: 'center' }}>No classic cars available at the moment.</Typography>
-      ) : (
-        <>
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {currentCars.map((car) => (
-              <Grid item xs={12} sm={6} md={4} key={car._id}>
-                <Paper elevation={4} sx={{ 
-                  borderRadius: 3, 
-                  padding: 2, 
-                  textAlign: 'center', 
-                  backgroundColor: '#333',
-                  transition: 'transform 0.3s',
-                  '&:hover': { transform: 'scale(1.02)' },
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  {car.images && car.images.length > 0 && !imageError[car._id] ? (
-                    <Box sx={{ 
-                      width: '100%', 
-                      height: '180px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      position: 'relative'
-                    }}>
-                      <img
-                        src={getImageUrl(car.images[0])}
-                        alt={`${car.name} ${car.model}`}
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          objectFit: 'cover' 
-                        }}
-                        onError={() => handleImageError(car._id)}
-                      />
+      <Box sx={{ 
+        flex: 1, 
+        overflow: 'auto',
+        // Hide scrollbar for Chrome, Safari and Opera
+        '&::-webkit-scrollbar': {
+          display: 'none'
+        },
+        // Hide scrollbar for IE, Edge and Firefox
+        msOverflowStyle: 'none',
+        scrollbarWidth: 'none'
+      }}>
+        {loading ? (
+          <Typography variant="h6" sx={{ textAlign: 'center' }}>Loading cars...</Typography>
+        ) : classicCars.length === 0 ? (
+          <Typography variant="h6" sx={{ textAlign: 'center' }}>No classic cars available at the moment.</Typography>
+        ) : (
+          <>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {currentCars.map((car) => (
+                <Grid item xs={12} sm={6} md={4} key={car._id}>
+                  <Paper elevation={4} sx={{ 
+                    borderRadius: 3, 
+                    padding: 2, 
+                    textAlign: 'center', 
+                    backgroundColor: '#333',
+                    transition: 'transform 0.3s',
+                    '&:hover': { transform: 'scale(1.02)' },
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    {car.images && car.images.length > 0 && !imageError[car._id] ? (
+                      <Box sx={{ 
+                        width: '100%', 
+                        height: '180px',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        position: 'relative'
+                      }}>
+                        <img
+                          src={getImageUrl(car.images[0])}
+                          alt={`${car.name} ${car.model}`}
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover' 
+                          }}
+                          onError={() => handleImageError(car._id)}
+                        />
+                      </Box>
+                    ) : (
+                      <Box sx={{ 
+                        width: '100%', 
+                        height: '180px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#555'
+                      }}>
+                        <BrokenImageIcon sx={{ fontSize: 60, color: '#999' }} />
+                      </Box>
+                    )}
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
+                        {car.name} - {car.model}
+                      </Typography>
+                      <Typography variant="h6" sx={{ color: 'gray' }}>
+                        {car.year} • {car.mileage} km
+                      </Typography>
+                      <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
+                        {car.price}
+                      </Typography>
                     </Box>
-                  ) : (
-                    <Box sx={{ 
-                      width: '100%', 
-                      height: '180px',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#555'
-                    }}>
-                      <BrokenImageIcon sx={{ fontSize: 60, color: '#999' }} />
-                    </Box>
-                  )}
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold' }}>
-                      {car.name} - {car.model}
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'gray' }}>
-                      {car.year} • {car.mileage} km
-                    </Typography>
-                    <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
-                      {car.price}
-                    </Typography>
-                  </Box>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
-                    sx={{ mt: 2 }} 
-                    onClick={() => handleOpenModal(car)}
-                    fullWidth
-                  >
-                    <DirectionsCarIcon sx={{ mr: 1 }} />
-                    View Details
-                  </Button>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+                    <Button 
+                      variant="contained" 
+                      color="primary" 
+                      sx={{ mt: 2 }} 
+                      onClick={() => handleOpenModal(car)}
+                      fullWidth
+                    >
+                      <DirectionsCarIcon sx={{ mr: 1 }} />
+                      View Details
+                    </Button>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4 }}>
-            <Pagination
-              count={Math.ceil(classicCars.length / carsPerPage)}
-              page={page}
-              onChange={(_, value) => setPage(value)}
-              color="primary"
-              sx={{ '& .MuiPaginationItem-root': { color: 'white' } }}
-            />
-          </Box>
-        </>
-      )}
+            <Box sx={{ display: 'flex', justifyContent: 'center', pb: 4 }}>
+              <Pagination
+                count={Math.ceil(classicCars.length / carsPerPage)}
+                page={page}
+                onChange={(_, value) => setPage(value)}
+                color="primary"
+                sx={{ '& .MuiPaginationItem-root': { color: 'white' } }}
+              />
+            </Box>
+          </>
+        )}
+      </Box>
 
       <Dialog 
         open={open} 

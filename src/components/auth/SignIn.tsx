@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, Button, Link, InputAdornment, AppBar, Toolbar, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Link,
+  InputAdornment,
+  AppBar,
+  Toolbar,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import { Email, Lock, Home } from '@mui/icons-material';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'; 
 import { useNavigate } from 'react-router-dom';
 
 const SignIn: React.FC = () => {
@@ -13,27 +23,27 @@ const SignIn: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const glassMorph = {
+    background: 'rgba(26, 26, 46, 0.8)',
+    backdropFilter: 'blur(12px)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
     setIsLoading(true);
-    
+
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
-        // Store the token and complete user info
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('role', data.user.role);
@@ -41,9 +51,8 @@ const SignIn: React.FC = () => {
         localStorage.setItem('email', data.user.email);
         localStorage.setItem('phone', data.user.phone);
         localStorage.setItem('userId', data.user.id);
-        
-        // Navigate based on role
-        switch(data.user.role) {
+
+        switch (data.user.role) {
           case 'admin':
             navigate('/admin');
             break;
@@ -66,34 +75,68 @@ const SignIn: React.FC = () => {
 
   return (
     <Box sx={{ height: '100vh', overflow: 'hidden' }}>
-      <AppBar position="fixed" sx={{ backgroundColor: '#1e1e1e', boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.5)' }}>
-        <Toolbar>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <DirectionsCarIcon sx={{ color: '#ffeb3b', fontSize: isMobile ? '30px' : '40px', mr: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#ffeb3b', fontSize: isMobile ? '1.2rem' : '1.5rem' }}>
-              {isMobile ? 'ZJ CARS' : 'ZJ SPECIAL CARS'}
-            </Typography>
-          </Box>
+      <AppBar position="fixed" sx={{ ...glassMorph, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+        <Toolbar sx={{ height: 70 }}>
+          <Box
+            component="img"
+            src="/src/assets/ZJlogo.png"
+            alt="ZJ Special Cars Logo"
+            sx={{ height: 50, mr: 2, filter: 'drop-shadow(0 0 10px rgba(255,235,59,0.3))' }}
+          />
           <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-end' }}>
-            <IconButton color="inherit" onClick={() => navigate('/')} sx={{ mx: 1 }}>
-              <Home sx={{ color: 'white' }} />
-            </IconButton>
+            <Button
+              color="inherit"
+              onClick={() => navigate('/')}
+              sx={{
+                color: 'white',
+                fontWeight: 'bold',
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: 0,
+                  height: '2px',
+                  backgroundColor: '#ffeb3b',
+                  transition: 'width 0.3s ease',
+                },
+                '&:hover::after': { width: '100%' },
+              }}
+              startIcon={<Home />}
+            >
+              Home
+            </Button>
           </Box>
         </Toolbar>
       </AppBar>
 
-      <Box sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        backgroundImage: `url('src/assets/Login.jpg')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        pt: '64px',
-        px: isMobile ? 2 : 0
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          backgroundImage: `url('src/assets/Login4.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundColor: '#000',
+          pt: '70px',
+          px: isMobile ? 2 : 0,
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.07)',
+            zIndex: 1,
+          },
+        }}
+      >
         <Box
           component="form"
           onSubmit={handleSubmit}
@@ -101,15 +144,23 @@ const SignIn: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backgroundColor: 'rgba(26, 26, 46, 0.6)',
             p: isMobile ? 3 : 4,
             borderRadius: 3,
-            boxShadow: '0px 4px 10px rgba(255, 200, 0, 0.5)',
+            boxShadow: '0 8px 32px rgba(255, 235, 59, 0.2)',
             width: '100%',
             maxWidth: '400px',
+            position: 'relative',
+            zIndex: 2,
+            backdropFilter: 'blur(14px)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
           }}
         >
-          <Typography variant="h4" gutterBottom sx={{ color: '#FFD700', fontWeight: 'bold', fontSize: isMobile ? '1.75rem' : '2.25rem' }}>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{ color: '#ffeb3b', fontWeight: 'bold', fontSize: isMobile ? '1.75rem' : '2.25rem' }}
+          >
             Sign In
           </Typography>
 
@@ -128,9 +179,22 @@ const SignIn: React.FC = () => {
             margin="normal"
             required
             disabled={isLoading}
-            sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': { borderColor: '#444' },
+                '&:hover fieldset': { borderColor: '#666' },
+                '&.Mui-focused fieldset': { borderColor: '#ffeb3b' },
+              },
+              '& .MuiInputBase-input': { color: 'white' },
+              '& .MuiInputLabel-root': { color: '#aaa' },
+              '& .MuiInputLabel-root.Mui-focused': { color: '#ffeb3b' },
+            }}
             InputProps={{
-              startAdornment: <InputAdornment position="start"><Email sx={{ color: '#FFC107' }} /></InputAdornment>,
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Email sx={{ color: '#ffeb3b' }} />
+                </InputAdornment>
+              ),
             }}
           />
 
@@ -143,9 +207,22 @@ const SignIn: React.FC = () => {
             margin="normal"
             required
             disabled={isLoading}
-            sx={{ input: { color: '#fff' }, label: { color: '#FFC107' } }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': { borderColor: '#444' },
+                '&:hover fieldset': { borderColor: '#666' },
+                '&.Mui-focused fieldset': { borderColor: '#ffeb3b' },
+              },
+              '& .MuiInputBase-input': { color: 'white' },
+              '& .MuiInputLabel-root': { color: '#aaa' },
+              '& .MuiInputLabel-root.Mui-focused': { color: '#ffeb3b' },
+            }}
             InputProps={{
-              startAdornment: <InputAdornment position="start"><Lock sx={{ color: '#FFC107' }} /></InputAdornment>,
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Lock sx={{ color: '#ffeb3b' }} />
+                </InputAdornment>
+              ),
             }}
           />
 
@@ -156,10 +233,14 @@ const SignIn: React.FC = () => {
             disabled={isLoading}
             sx={{
               mt: 3,
-              backgroundColor: '#FFC107',
+              backgroundColor: '#ffeb3b',
               color: '#000',
               fontWeight: 'bold',
-              '&:hover': { backgroundColor: '#FFD54F' },
+              '&:hover': { backgroundColor: '#ffe100' },
+              '&:disabled': {
+                backgroundColor: 'rgba(255, 235, 59, 0.5)',
+                color: 'rgba(0, 0, 0, 0.5)',
+              },
             }}
           >
             {isLoading ? 'Signing In...' : 'Sign In'}
@@ -172,7 +253,7 @@ const SignIn: React.FC = () => {
               onClick={() => navigate('/sign-up')}
               underline="hover"
               disabled={isLoading}
-              sx={{ color: '#FFD700', fontWeight: 'bold' }}
+              sx={{ color: '#ffeb3b', fontWeight: 'bold' }}
             >
               Sign Up
             </Link>
