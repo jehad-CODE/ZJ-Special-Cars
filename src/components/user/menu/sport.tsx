@@ -110,10 +110,10 @@ const Sport: React.FC = () => {
     }));
   };
 
-  // Sort options
+
   const [sortBy, setSortBy] = useState('newest');
   
-  // Sort cars based on selection
+  
   const sortCars = (cars: Car[]) => {
     switch(sortBy) {
       case 'priceAsc':
@@ -215,11 +215,9 @@ const Sport: React.FC = () => {
       <Box sx={{ 
         flex: 1, 
         overflow: 'auto',
-        // Hide scrollbar for Chrome, Safari and Opera
         '&::-webkit-scrollbar': {
           display: 'none'
         },
-        // Hide scrollbar for IE, Edge and Firefox
         msOverflowStyle: 'none',
         scrollbarWidth: 'none'
       }}>

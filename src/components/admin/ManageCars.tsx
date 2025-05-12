@@ -3,15 +3,15 @@ import {
   Typography, Box, TextField, Button, CircularProgress, Grid, InputLabel, MenuItem,
   Select, FormControl, Card, CardContent, CardMedia, IconButton, Dialog,
   DialogTitle, DialogContent, DialogActions, Pagination, Stack, Chip,
-  ImageList, ImageListItem
+  ImageList, ImageListItem, FormControlLabel, RadioGroup, Radio
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import SortIcon from '@mui/icons-material/Sort';
 import axios from 'axios';
 
 // Define car interface
@@ -30,11 +30,12 @@ interface Car {
   price: number;
   images: string[];
   status: string;
+  createdAt?: string;
 }
 
 const API_URL = 'http://localhost:5000/api';
 
-const ManageCars: React.FC = () => {
+const ApprovedCars: React.FC = () => {
   // State management
   const [cars, setCars] = useState<Car[]>([]);
   const [filter, setFilter] = useState<string>('All');
@@ -45,6 +46,8 @@ const ManageCars: React.FC = () => {
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [selectedImages, setSelectedImages] = useState<{file: File, preview: string}[]>([]);
+  const [sortBy, setSortBy] = useState<string>('newest');
+  const [openSortDialog, setOpenSortDialog] = useState<boolean>(false);
   
   // Form state
   const [carName, setCarName] = useState('');
@@ -64,12 +67,12 @@ const ManageCars: React.FC = () => {
   const [openGallery, setOpenGallery] = useState<boolean>(false);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   
-  const itemsPerPage = 9;
+  const itemsPerPage = 6;
 
-  // Fetch cars on component mount and filter change
+  // Fetch cars on component mount and filter/sort change
   useEffect(() => {
     fetchCars();
-  }, [filter]);
+  }, [filter, sortBy]);
   
   // Cleanup for image previews
   useEffect(() => {
@@ -81,11 +84,42 @@ const ManageCars: React.FC = () => {
   const fetchCars = async () => {
     try {
       setIsLoading(true);
-      const params: any = { role: 'admin' };
+      const params: any = { 
+        role: 'admin',
+        status: 'approved'  // Only get approved cars
+      };
       if (filter !== 'All') params.type = filter;
       
       const response = await axios.get(`${API_URL}/cars`, { params });
-      setCars(response.data);
+      
+      // Sort the cars based on the selected sort option
+      let sortedCars = [...response.data];
+      
+      switch (sortBy) {
+        case 'newest':
+          sortedCars.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          break;
+        case 'oldest':
+          sortedCars.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+          break;
+        case 'priceHighToLow':
+          sortedCars.sort((a, b) => b.price - a.price);
+          break;
+        case 'priceLowToHigh':
+          sortedCars.sort((a, b) => a.price - b.price);
+          break;
+        case 'yearNewest':
+          sortedCars.sort((a, b) => b.year - a.year);
+          break;
+        case 'yearOldest':
+          sortedCars.sort((a, b) => a.year - b.year);
+          break;
+        default:
+          // Default to newest first
+          sortedCars.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      }
+      
+      setCars(sortedCars);
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching cars:', error);
@@ -151,18 +185,6 @@ const ManageCars: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (id: string, status: string) => {
-    try {
-      await axios.patch(`${API_URL}/cars/${id}/status`, {
-        status,
-        userRole: 'admin'
-      });
-      fetchCars();
-    } catch (error) {
-      console.error('Error updating car status:', error);
-    }
-  };
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
@@ -225,7 +247,7 @@ const ManageCars: React.FC = () => {
       let imagePaths = [...carImages];
       if (imageFiles.length > 0) {
         const uploadedPaths = await uploadImages();
-        imagePaths = [...uploadedPaths, ...imagePaths]; // Add new images to beginning
+        imagePaths = [...uploadedPaths, ...imagePaths]; 
       }
       
       const carData = {
@@ -260,27 +282,27 @@ const ManageCars: React.FC = () => {
     }
   };
 
-  const getStatusChip = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <Chip size="small" icon={<CheckCircleIcon />} label="Approved" color="success" />;
-      case 'pending':
-        return <Chip size="small" label="Pending" color="warning" />;
-      case 'rejected':
-        return <Chip size="small" icon={<CancelIcon />} label="Rejected" color="error" />;
-      default:
-        return null;
-    }
+  const handleSortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSortBy(event.target.value);
+    setPage(1); // Reset to first page when sort changes
   };
 
   const paginatedCars = cars.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(cars.length / itemsPerPage)); // Always at least 1 page
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>Manage Cars</Typography>
+      <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>Approved Cars</Typography>
       
-      {/* Filter and Add buttons */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      {/* Filter, Sort and Add buttons */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' }, 
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: 2
+      }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ flexWrap: 'wrap' }}>
           {['All', 'Sport', 'Classic', 'Hybrid/Electric'].map((type) => (
             <Button key={type} variant={filter === type ? 'contained' : 'outlined'} 
@@ -289,9 +311,31 @@ const ManageCars: React.FC = () => {
             </Button>
           ))}
         </Stack>
-        <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleOpenAddDialog}>
-          Add Car
-        </Button>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          <Button 
+            variant="outlined" 
+            color="primary" 
+            startIcon={<SortIcon />} 
+            onClick={() => setOpenSortDialog(true)}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
+            Sort By: {sortBy === 'newest' ? 'Newest First' : 
+                      sortBy === 'oldest' ? 'Oldest First' : 
+                      sortBy === 'priceHighToLow' ? 'Price: High to Low' : 
+                      sortBy === 'priceLowToHigh' ? 'Price: Low to High' :
+                      sortBy === 'yearNewest' ? 'Year: Newest First' :
+                      'Year: Oldest First'}
+          </Button>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            startIcon={<AddIcon />} 
+            onClick={handleOpenAddDialog}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
+            Add Car
+          </Button>
+        </Stack>
       </Box>
 
       {/* Car listing */}
@@ -301,75 +345,118 @@ const ManageCars: React.FC = () => {
         </Box>
       ) : (
         <>
-          <Grid container spacing={2}>
-            {paginatedCars.map((car) => (
-              <Grid item xs={12} sm={6} md={4} key={car._id}>
-                <Card sx={{ borderRadius: 2, boxShadow: 2, height: '100%', backgroundColor: '#1c1c1c', color: 'white' }}>
-                  <CardMedia 
-                    component="img" 
-                    image={car.images && car.images.length > 0 
-                      ? `http://localhost:5000${car.images[0]}` 
-                      : '/src/assets/car-placeholder.jpg'} 
-                    alt={`${car.name} image`}
-                    sx={{ height: 160, objectFit: 'cover' }} 
-                  />
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="h6" noWrap>{car.name} - {car.model}</Typography>
-                      {getStatusChip(car.status)}
+          <Grid container spacing={3}>
+            {paginatedCars.length > 0 ? (
+              paginatedCars.map((car) => (
+                <Grid item xs={12} sm={6} md={4} key={car._id}>
+                  <Card sx={{ 
+                    borderRadius: 2, 
+                    boxShadow: 2, 
+                    height: '100%', 
+                    backgroundColor: '#1c1c1c', 
+                    color: 'white',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    <CardMedia 
+                      component="img" 
+                      image={car.images && car.images.length > 0 
+                        ? `http://localhost:5000${car.images[0]}` 
+                        : '/src/assets/car-placeholder.jpg'} 
+                      alt={`${car.name} image`}
+                      sx={{ height: 180, objectFit: 'cover' }} 
+                    />
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="h6" noWrap sx={{ maxWidth: '70%' }}>{car.name} - {car.model}</Typography>
+                        <Chip size="small" icon={<CheckCircleIcon />} label="Approved" color="success" />
+                      </Box>
+                      <Typography variant="body2">Year: {car.year}</Typography>
+                      <Typography variant="body2">Mileage: {car.mileage} km</Typography>
+                      <Typography variant="body2">Color: {car.color}</Typography>
+                      <Typography variant="body2">Type: {car.type}</Typography>
+                      {car.sellerPhone && <Typography variant="body2">Phone: {car.sellerPhone}</Typography>}
+                      <Typography fontWeight="bold" color="primary" sx={{ mt: 1 }}>${car.price.toLocaleString()}</Typography>
+                    </CardContent>
+                    <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        startIcon={<PhotoLibraryIcon />}
+                        disabled={!car.images || car.images.length === 0}
+                        onClick={() => handleOpenGallery(car.images)}
+                        sx={{ flexGrow: { xs: 1, sm: 0 }, mb: { xs: 1, sm: 0 } }}
+                      >
+                        Photos
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        startIcon={<EditIcon />}
+                        onClick={() => handleOpenEditDialog(car)}
+                        sx={{ flexGrow: { xs: 1, sm: 0 } }}
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        color="error" 
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDelete(car._id!)}
+                        sx={{ flexGrow: { xs: 1, sm: 0 } }}
+                      >
+                        Delete
+                      </Button>
                     </Box>
-                    <Typography variant="body2">Year: {car.year}</Typography>
-                    <Typography variant="body2">Mileage: {car.mileage} km</Typography>
-                    <Typography variant="body2">Color: {car.color}</Typography>
-                    <Typography variant="body2">Type: {car.type}</Typography>
-                    {car.sellerPhone && <Typography variant="body2">Phone: {car.sellerPhone}</Typography>}
-                    <Typography fontWeight="bold" color="primary">${car.price.toLocaleString()}</Typography>
-                  </CardContent>
-                  <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      startIcon={<PhotoLibraryIcon />}
-                      disabled={!car.images || car.images.length === 0}
-                      onClick={() => handleOpenGallery(car.images)}
-                    >
-                      Photos
-                    </Button>
-                    <Button size="small" variant="outlined" startIcon={<EditIcon />}
-                      onClick={() => handleOpenEditDialog(car)}>Edit</Button>
-                    <Button size="small" variant="outlined" color="error" startIcon={<DeleteIcon />}
-                      onClick={() => handleDelete(car._id!)}>Delete</Button>
-                  </Box>
-                  {car.status === 'pending' && (
-                    <Box sx={{ p: 2, pt: 0, display: 'flex', justifyContent: 'space-between' }}>
-                      <Button size="small" variant="contained" color="success"
-                        onClick={() => handleStatusChange(car._id!, 'approved')}>Approve</Button>
-                      <Button size="small" variant="contained" color="error"
-                        onClick={() => handleStatusChange(car._id!, 'rejected')}>Reject</Button>
-                    </Box>
-                  )}
-                </Card>
+                  </Card>
+                </Grid>
+              ))
+            ) : (
+              <Grid item xs={12}>
+                <Box sx={{ p: 4, textAlign: 'center' }}>
+                  <Typography>No approved cars found. Add your first car or change the filter.</Typography>
+                </Box>
               </Grid>
-            ))}
+            )}
           </Grid>
 
-          {cars.length === 0 && (
-            <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Typography>No cars found. Add your first car or change the filter.</Typography>
-            </Box>
-          )}
-
-          {/* Pagination */}
-          {cars.length > itemsPerPage && (
+          {/* Pagination - always shown */}
+          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
             <Pagination 
-              count={Math.ceil(cars.length / itemsPerPage)} 
+              count={totalPages} 
               page={page}
               onChange={(_, value) => setPage(value)}
-              sx={{ mt: 3, display: 'flex', justifyContent: 'center' }} 
+              color="primary"
+              size="large"
+              hideNextButton
+              hidePrevButton
             />
-          )}
+          </Box>
         </>
       )}
+
+      {/* Sort Dialog */}
+      <Dialog 
+        open={openSortDialog} 
+        onClose={() => setOpenSortDialog(false)}
+        PaperProps={{ sx: { backgroundColor: 'rgba(0, 0, 0, 0.9)', color: 'white', borderRadius: 2 } }}
+      >
+        <DialogTitle>Sort Cars</DialogTitle>
+        <DialogContent>
+          <RadioGroup value={sortBy} onChange={handleSortChange}>
+            <FormControlLabel value="newest" control={<Radio sx={{ color: 'white' }} />} label="Newest First" />
+            <FormControlLabel value="oldest" control={<Radio sx={{ color: 'white' }} />} label="Oldest First" />
+            <FormControlLabel value="priceHighToLow" control={<Radio sx={{ color: 'white' }} />} label="Price: High to Low" />
+            <FormControlLabel value="priceLowToHigh" control={<Radio sx={{ color: 'white' }} />} label="Price: Low to High" />
+            <FormControlLabel value="yearNewest" control={<Radio sx={{ color: 'white' }} />} label="Year: Newest First" />
+            <FormControlLabel value="yearOldest" control={<Radio sx={{ color: 'white' }} />} label="Year: Oldest First" />
+          </RadioGroup>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenSortDialog(false)} variant="contained">Done</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add/Edit Car Dialog */}
       <Dialog 
@@ -576,11 +663,23 @@ const ManageCars: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           {galleryImages.length > 0 ? (
-            <ImageList cols={2} gap={8}>
+            <ImageList cols={2} gap={8} sx={{ 
+              '& .MuiImageListItem-root': { 
+                width: '100%', 
+                '@media (max-width: 600px)': {
+                  width: '100%',
+                  gridColumnEnd: 'span 2 !important',
+                }
+              } 
+            }}>
               {galleryImages.map((img, index) => (
                 <ImageListItem key={index}>
-                  <img src={`http://localhost:5000${img}`} alt={`Car image ${index + 1}`} 
-                    loading="lazy" style={{ width: '100%', borderRadius: 4 }} />
+                  <img 
+                    src={`http://localhost:5000${img}`} 
+                    alt={`Car image ${index + 1}`} 
+                    loading="lazy" 
+                    style={{ width: '100%', borderRadius: 4 }} 
+                  />
                 </ImageListItem>
               ))}
             </ImageList>
@@ -593,4 +692,4 @@ const ManageCars: React.FC = () => {
   );
 };
 
-export default ManageCars;
+export default ApprovedCars;

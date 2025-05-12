@@ -30,7 +30,7 @@ router.post('/upload', upload.array('images', 10), (req, res) => {
 // Get all cars with filtering options
 router.get('/', async (req, res) => {
   try {
-    const { role = 'user', type, email } = req.query;
+    const { role = 'user', type, email, status } = req.query;
     
     // Build query based on parameters
     let query = {};
@@ -38,6 +38,10 @@ router.get('/', async (req, res) => {
     // Role-based filtering - users only see approved cars unless they're the seller
     if (role === 'user' && !email) {
       query.status = 'approved';
+    } 
+    // Status filtering - if explicitly provided (especially for admin views)
+    else if (status && ['approved', 'pending', 'rejected'].includes(status)) {
+      query.status = status;
     }
     
     // Type filtering
@@ -161,6 +165,76 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Car deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// Get cars count by status (for admin dashboard)
+router.get('/stats/count', async (req, res) => {
+  try {
+    // Check if user has admin/staff role
+    const { role } = req.query;
+    if (!['admin', 'staff'].includes(role)) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+    
+    // Aggregate cars by status
+    const stats = await Car.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]);
+    
+    // Format the results
+    const result = {
+      approved: 0,
+      pending: 0,
+      rejected: 0,
+      total: 0
+    };
+    
+    stats.forEach(item => {
+      if (item._id && ['approved', 'pending', 'rejected'].includes(item._id)) {
+        result[item._id] = item.count;
+        result.total += item.count;
+      }
+    });
+    
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Bulk update car status (admin/staff only)
+router.patch('/bulk/status', async (req, res) => {
+  try {
+    const { userRole, status, carIds } = req.body;
+    
+    // Authorization check
+    if (!['admin', 'staff'].includes(userRole)) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+    
+    // Validate status
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    
+    // Validate car IDs
+    if (!Array.isArray(carIds) || carIds.length === 0) {
+      return res.status(400).json({ message: 'No car IDs provided' });
+    }
+    
+    // Update multiple cars
+    const result = await Car.updateMany(
+      { _id: { $in: carIds } },
+      { status }
+    );
+    
+    res.json({
+      message: `Updated status to ${status} for ${result.modifiedCount} cars`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 
