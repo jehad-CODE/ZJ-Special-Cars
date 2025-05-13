@@ -7,7 +7,6 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import PendingIcon from '@mui/icons-material/PendingActions';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
@@ -124,30 +123,6 @@ const PendingCars: React.FC = () => {
     }
   };
 
-  const resetForm = () => {
-    setCarName('');
-    setCarModel('');
-    setCarYear('');
-    setCarMileage('');
-    setCarDetails('');
-    setCarEmail('');
-    setCarPhone('');
-    setCarColor('');
-    setCarGearType('');
-    setCarType('');
-    setCarPrice('');
-    setCarImages([]);
-    setImageFiles([]);
-    selectedImages.forEach(image => URL.revokeObjectURL(image.preview));
-    setSelectedImages([]);
-  };
-
-  const handleOpenAddDialog = () => {
-    resetForm();
-    setSelectedCar(null);
-    setOpenDialog(true);
-  };
-
   const handleOpenEditDialog = (car: Car) => {
     setSelectedCar(car);
     setCarName(car.name);
@@ -162,6 +137,7 @@ const PendingCars: React.FC = () => {
     setCarType(car.type);
     setCarPrice(String(car.price));
     setCarImages(car.images || []);
+    setSelectedImages([]);
     setOpenDialog(true);
   };
 
@@ -268,8 +244,6 @@ const PendingCars: React.FC = () => {
       
       if (selectedCar && selectedCar._id) {
         await axios.put(`${API_URL}/cars/${selectedCar._id}`, carData);
-      } else {
-        await axios.post(`${API_URL}/cars`, carData);
       }
       
       fetchCars();
@@ -321,14 +295,6 @@ const PendingCars: React.FC = () => {
                       sortBy === 'priceLowToHigh' ? 'Price: Low to High' :
                       sortBy === 'yearNewest' ? 'Year: Newest First' :
                       'Year: Oldest First'}
-          </Button>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />} 
-            onClick={handleOpenAddDialog}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
-          >
-            Add Car
           </Button>
         </Stack>
       </Box>
@@ -449,11 +415,11 @@ const PendingCars: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Add/Edit Car Dialog */}
+      {/* Edit Car Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="md"
         PaperProps={{ sx: { backgroundColor: 'rgba(0, 0, 0, 0.9)', color: 'white' } }}>
         <DialogTitle>
-          {selectedCar ? 'Edit Car' : 'Add New Car'}
+          Edit Car
           <IconButton onClick={() => setOpenDialog(false)} sx={{ position: 'absolute', right: 8, top: 8, color: 'white' }}>
             <CloseIcon />
           </IconButton>
@@ -581,7 +547,7 @@ const PendingCars: React.FC = () => {
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setOpenDialog(false)} sx={{ color: 'white' }}>Cancel</Button>
           <Button variant="contained" onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : selectedCar ? 'Update Car' : 'Add Car'}
+            {isSubmitting ? 'Saving...' : 'Update Car'}
           </Button>
         </DialogActions>
       </Dialog>
