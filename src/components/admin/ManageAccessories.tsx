@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import {
   Typography, Box, TextField, Button, CircularProgress, Grid, InputLabel,
   Card, CardContent, CardMedia, IconButton, 
   Dialog, DialogTitle, DialogContent, DialogActions, Pagination, Stack,
-  ImageList, ImageListItem
+  ImageList, ImageListItem, FormControlLabel, RadioGroup, Radio
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import SortIcon from '@mui/icons-material/Sort';
 
 // Define accessory interface
 interface LifeAccessory {
@@ -23,6 +24,7 @@ interface LifeAccessory {
   brand?: string;
   stock?: number;
   type?: 'life';
+  createdAt?: string;
 }
 
 interface CarAccessory {
@@ -37,6 +39,7 @@ interface CarAccessory {
   sellerContact: string;
   images: string[];
   type?: 'car';
+  createdAt?: string;
 }
 
 type Accessory = (LifeAccessory | CarAccessory) & { type: 'car' | 'life' };
@@ -55,6 +58,11 @@ const ManageAccessories: React.FC = () => {
   const [selectedAccessory, setSelectedAccessory] = useState<Accessory | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [selectedImages, setSelectedImages] = useState<{file: File, preview: string}[]>([]);
+  const [sortBy, setSortBy] = useState<string>('newest');
+  const [openSortDialog, setOpenSortDialog] = useState<boolean>(false);
+  
+  // Ref for scroll position
+  const pageRef = useRef<HTMLDivElement>(null);
   
   // Form state for common fields
   const [name, setName] = useState('');
@@ -79,11 +87,11 @@ const ManageAccessories: React.FC = () => {
   
   const itemsPerPage = 9;
 
-  // Fetch accessories when type changes
+  // Fetch accessories when type or sort changes
   useEffect(() => {
     fetchAccessories();
     setPage(1);
-  }, [selectedType]);
+  }, [selectedType, sortBy]);
   
   // Cleanup for image previews
   useEffect(() => {
@@ -106,19 +114,60 @@ const ManageAccessories: React.FC = () => {
         const carAccessories = carResponse.data.map((acc: CarAccessory) => ({ ...acc, type: 'car' }));
         const lifeAccessories = lifeResponse.data.map((acc: LifeAccessory) => ({ ...acc, type: 'life' }));
         
-        setAccessories([...carAccessories, ...lifeAccessories]);
+        let combinedAccessories = [...carAccessories, ...lifeAccessories];
+        
+        // Sort the accessories based on the selected sort option
+        combinedAccessories = sortAccessories(combinedAccessories);
+        
+        setAccessories(combinedAccessories);
       } else {
         // Fetch from specific database
         const endpoint = selectedType === 'car' ? 'car-accessories' : 'life-products';
         const response = await axios.get(`${API_URL}/api/${endpoint}`);
         const dataWithType = response.data.map((acc: any) => ({ ...acc, type: selectedType }));
-        setAccessories(dataWithType);
+        
+        // Sort the accessories
+        const sortedAccessories = sortAccessories(dataWithType);
+        
+        setAccessories(sortedAccessories);
       }
     } catch (error) {
       console.error(`Error fetching accessories:`, error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const sortAccessories = (accessoriesToSort: Accessory[]) => {
+    let sorted = [...accessoriesToSort];
+    
+    switch (sortBy) {
+      case 'newest':
+        sorted.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+        break;
+      case 'priceHighToLow':
+        sorted.sort((a, b) => {
+          const priceA = typeof a.price === 'number' ? a.price : parseFloat(a.price);
+          const priceB = typeof b.price === 'number' ? b.price : parseFloat(b.price);
+          return priceB - priceA;
+        });
+        break;
+      case 'priceLowToHigh':
+        sorted.sort((a, b) => {
+          const priceA = typeof a.price === 'number' ? a.price : parseFloat(a.price);
+          const priceB = typeof b.price === 'number' ? b.price : parseFloat(b.price);
+          return priceA - priceB;
+        });
+        break;
+      default:
+        // Default to newest first
+        sorted.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    }
+    
+    return sorted;
   };
 
   const resetForm = () => {
@@ -310,7 +359,40 @@ const ManageAccessories: React.FC = () => {
     }
   };
 
+  const handleSortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSortBy(event.target.value);
+    // We'll set page to 1 when sort changes, but keep the scroll position
+    setPage(1);
+  };
+
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    // Store the current scroll position
+    const scrollPosition = window.scrollY;
+    
+    // Change the page
+    setPage(value);
+    
+    // Restore scroll position
+    setTimeout(() => {
+      window.scrollTo(0, scrollPosition);
+    }, 0);
+  };
+  
+  const handleTypeChange = (type: 'all' | 'car' | 'life') => {
+    // Store the current scroll position
+    const scrollPosition = window.scrollY;
+    
+    // Change the type
+    setSelectedType(type);
+    
+    // After state update and re-render, restore the scroll position
+    setTimeout(() => {
+      window.scrollTo(0, scrollPosition);
+    }, 0);
+  };
+
   const paginatedAccessories = accessories.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(accessories.length / itemsPerPage)); // Always at least 1 page
 
   // Helper function to safely get image URL
   const getImageUrl = (imagePath: string) => {
@@ -329,43 +411,68 @@ const ManageAccessories: React.FC = () => {
   };
 
   return (
-    <Box>
+    <Box ref={pageRef} sx={{ 
+      minHeight: 'calc(100vh - 80px)', // Ensures content fills the viewport with some padding
+      position: 'relative'
+    }}>
       <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
         Manage Accessories
       </Typography>
       
-      {/* Type selector buttons */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Stack direction="row" spacing={1}>
+      {/* Type selector buttons and sort */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' }, 
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: 2
+      }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ flexWrap: 'wrap' }}>
           <Button 
             variant={selectedType === 'all' ? 'contained' : 'outlined'} 
-            onClick={() => setSelectedType('all')}
+            onClick={() => handleTypeChange('all')}
           >
             All
           </Button>
           <Button 
             variant={selectedType === 'car' ? 'contained' : 'outlined'} 
-            onClick={() => setSelectedType('car')}
+            onClick={() => handleTypeChange('car')}
           >
             Car Accessories
           </Button>
           <Button 
             variant={selectedType === 'life' ? 'contained' : 'outlined'} 
-            onClick={() => setSelectedType('life')}
+            onClick={() => handleTypeChange('life')}
           >
             Life Products
           </Button>
         </Stack>
         
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<AddIcon />} 
-          onClick={handleOpenAddDialog}
-          disabled={selectedType === 'all'}
-        >
-          Add Accessory
-        </Button>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          <Button 
+            variant="outlined" 
+            color="primary" 
+            startIcon={<SortIcon />} 
+            onClick={() => setOpenSortDialog(true)}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
+            Sort By: {sortBy === 'newest' ? 'Newest First' : 
+                      sortBy === 'oldest' ? 'Oldest First' : 
+                      sortBy === 'priceHighToLow' ? 'Price: High to Low' : 
+                      'Price: Low to High'}
+          </Button>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            startIcon={<AddIcon />} 
+            onClick={handleOpenAddDialog}
+            disabled={selectedType === 'all'}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
+            Add Accessory
+          </Button>
+        </Stack>
       </Box>
 
       {/* Accessory listing */}
@@ -376,85 +483,131 @@ const ManageAccessories: React.FC = () => {
       ) : (
         <>
           <Grid container spacing={2}>
-            {paginatedAccessories.map((accessory) => (
-              <Grid item xs={12} sm={6} md={4} key={accessory._id}>
-                <Card sx={{ borderRadius: 2, boxShadow: 2, height: '100%', backgroundColor: '#1c1c1c', color: 'white' }}>
-                  <CardMedia 
-                    component="img" 
-                    image={accessory.images && accessory.images.length > 0 
-                      ? getImageUrl(accessory.images[0])
-                      : '/src/assets/accessory-placeholder.jpg'} 
-                    alt={`${accessory.name} image`}
-                    sx={{ height: 160, objectFit: 'cover' }}
-                    onError={(e: any) => {
-                      e.target.src = '/src/assets/accessory-placeholder.jpg';
-                    }}
-                  />
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="h6" noWrap>{accessory.name}</Typography>
-                      <Box sx={{
-                        backgroundColor: accessory.type === 'car' ? '#2196f3' : '#4caf50',
-                        color: 'white',
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1,
-                        fontSize: '0.75rem',
-                        fontWeight: 'bold'
-                      }}>
-                        {accessory.type?.toUpperCase()}
+            {paginatedAccessories.length > 0 ? (
+              paginatedAccessories.map((accessory) => (
+                <Grid item xs={12} sm={6} md={4} key={accessory._id}>
+                  <Card sx={{ borderRadius: 2, boxShadow: 2, height: '100%', backgroundColor: '#1c1c1c', color: 'white' }}>
+                    <CardMedia 
+                      component="img" 
+                      image={accessory.images && accessory.images.length > 0 
+                        ? getImageUrl(accessory.images[0])
+                        : '/src/assets/accessory-placeholder.jpg'} 
+                      alt={`${accessory.name} image`}
+                      sx={{ height: 160, objectFit: 'cover' }}
+                      onError={(e: any) => {
+                        e.target.src = '/src/assets/accessory-placeholder.jpg';
+                      }}
+                    />
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="h6" noWrap>{accessory.name}</Typography>
+                        <Box sx={{
+                          backgroundColor: accessory.type === 'car' ? '#2196f3' : '#4caf50',
+                          color: 'white',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold'
+                        }}>
+                          {accessory.type?.toUpperCase()}
+                        </Box>
                       </Box>
+                      <Typography variant="body2" noWrap sx={{ mb: 1 }}>{getDescription(accessory)}</Typography>
+                      <Typography variant="body2">Category: {accessory.category}</Typography>
+                      <Typography variant="body2">Brand: {accessory.brand}</Typography>
+                      {accessory.type === 'car' && (
+                        <Typography variant="body2">Contact: {(accessory as CarAccessory).sellerContact}</Typography>
+                      )}
+                      {accessory.type === 'life' && (accessory as LifeAccessory).stock !== undefined && (
+                        <Typography variant="body2">Stock: {(accessory as LifeAccessory).stock}</Typography>
+                      )}
+                      <Typography fontWeight="bold" color="primary">
+                        ${typeof accessory.price === 'number' ? accessory.price.toLocaleString() : accessory.price}
+                      </Typography>
+                    </CardContent>
+                    <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        startIcon={<PhotoLibraryIcon />}
+                        disabled={!accessory.images || accessory.images.length === 0}
+                        onClick={() => handleOpenGallery(accessory.images)}
+                        sx={{ flexGrow: { xs: 1, sm: 0 }, mb: { xs: 1, sm: 0 } }}
+                      >
+                        Photos
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        startIcon={<EditIcon />}
+                        onClick={() => handleOpenEditDialog(accessory)}
+                        sx={{ flexGrow: { xs: 1, sm: 0 } }}
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        color="error" 
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDelete(accessory._id, accessory.type!)}
+                        sx={{ flexGrow: { xs: 1, sm: 0 } }}
+                      >
+                        Delete
+                      </Button>
                     </Box>
-                    <Typography variant="body2" noWrap sx={{ mb: 1 }}>{getDescription(accessory)}</Typography>
-                    <Typography variant="body2">Category: {accessory.category}</Typography>
-                    <Typography variant="body2">Brand: {accessory.brand}</Typography>
-                    {accessory.type === 'car' && (
-                      <Typography variant="body2">Contact: {(accessory as CarAccessory).sellerContact}</Typography>
-                    )}
-                    {accessory.type === 'life' && (accessory as LifeAccessory).stock !== undefined && (
-                      <Typography variant="body2">Stock: {(accessory as LifeAccessory).stock}</Typography>
-                    )}
-                    <Typography fontWeight="bold" color="primary">
-                      ${typeof accessory.price === 'number' ? accessory.price.toLocaleString() : accessory.price}
-                    </Typography>
-                  </CardContent>
-                  <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      startIcon={<PhotoLibraryIcon />}
-                      disabled={!accessory.images || accessory.images.length === 0}
-                      onClick={() => handleOpenGallery(accessory.images)}
-                    >
-                      Photos
-                    </Button>
-                    <Button size="small" variant="outlined" startIcon={<EditIcon />}
-                      onClick={() => handleOpenEditDialog(accessory)}>Edit</Button>
-                    <Button size="small" variant="outlined" color="error" startIcon={<DeleteIcon />}
-                      onClick={() => handleDelete(accessory._id, accessory.type!)}>Delete</Button>
-                  </Box>
-                </Card>
+                  </Card>
+                </Grid>
+              ))
+            ) : (
+              <Grid item xs={12}>
+                <Box sx={{ p: 4, textAlign: 'center' }}>
+                  <Typography>No accessories found. Add your first accessory or change the filter.</Typography>
+                </Box>
               </Grid>
-            ))}
+            )}
           </Grid>
 
-          {accessories.length === 0 && (
-            <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Typography>No accessories found.</Typography>
-            </Box>
-          )}
-
-          {/* Pagination */}
-          {accessories.length > itemsPerPage && (
+          {/* Pagination - always shown */}
+          <Box sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
             <Pagination 
-              count={Math.ceil(accessories.length / itemsPerPage)} 
+              count={totalPages} 
               page={page}
-              onChange={(_, value) => setPage(value)}
-              sx={{ mt: 3, display: 'flex', justifyContent: 'center' }} 
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              hideNextButton
+              hidePrevButton
             />
+          </Box>
+          
+          {/* Empty space at the bottom to ensure consistent page height */}
+          {paginatedAccessories.length < 3 && (
+            <Box sx={{ height: '50vh' }} />
           )}
         </>
       )}
+
+      {/* Sort Dialog */}
+      <Dialog 
+        open={openSortDialog} 
+        onClose={() => setOpenSortDialog(false)}
+        PaperProps={{ sx: { backgroundColor: 'rgba(0, 0, 0, 0.9)', color: 'white', borderRadius: 2 } }}
+      >
+        <DialogTitle>Sort Accessories</DialogTitle>
+        <DialogContent>
+          <RadioGroup value={sortBy} onChange={handleSortChange}>
+            <FormControlLabel value="newest" control={<Radio sx={{ color: 'white' }} />} label="Newest First" />
+            <FormControlLabel value="oldest" control={<Radio sx={{ color: 'white' }} />} label="Oldest First" />
+            <FormControlLabel value="priceHighToLow" control={<Radio sx={{ color: 'white' }} />} label="Price: High to Low" />
+            <FormControlLabel value="priceLowToHigh" control={<Radio sx={{ color: 'white' }} />} label="Price: Low to High" />
+          </RadioGroup>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenSortDialog(false)} variant="contained">Done</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add/Edit Accessory Dialog */}
       <Dialog 
@@ -471,6 +624,7 @@ const ManageAccessories: React.FC = () => {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+          {/* Form content - unchanged */}
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -739,7 +893,15 @@ const ManageAccessories: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           {galleryImages.length > 0 ? (
-            <ImageList cols={2} gap={8}>
+            <ImageList cols={2} gap={8} sx={{ 
+              '& .MuiImageListItem-root': { 
+                width: '100%', 
+                '@media (max-width: 600px)': {
+                  width: '100%',
+                  gridColumnEnd: 'span 2 !important',
+                }
+              } 
+            }}>
               {galleryImages.map((img, index) => (
                 <ImageListItem key={index}>
                   <img 
