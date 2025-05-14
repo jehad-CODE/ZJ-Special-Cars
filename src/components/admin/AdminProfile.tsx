@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -12,7 +12,8 @@ import {
   useMediaQuery,
   useTheme,
   Snackbar,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   Person,
@@ -23,10 +24,12 @@ import {
   CloudUpload,
   Save,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 const AdminProfile: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
   
   // Admin profile state
   const [name, setName] = useState('Admin User');
@@ -39,18 +42,89 @@ const AdminProfile: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState('');
 
+  // Fetch admin data when component mounts
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/sign-in');
+      return;
+    }
+
+    // Get user data from localStorage
+    const username = localStorage.getItem('username') || 'Admin User';
+    const userEmail = localStorage.getItem('email') || 'admin@zjcars.com';
+    const userPhone = localStorage.getItem('phone') || '+966 502 123 456';
+    const id = localStorage.getItem('userId') || '';
+
+    setName(username);
+    setEmail(userEmail);
+    setPhone(userPhone);
+    setUserId(id);
+  }, [navigate]);
+  
   // Handle save profile
-  const handleSaveProfile = () => {
-    // Here you would typically save the data to your backend
-    setIsEditing(false);
-    setSnackbarMessage('Profile updated successfully!');
-    setSnackbarSeverity('success');
-    setSnackbarOpen(true);
+  const handleSaveProfile = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSnackbarMessage('Authentication error. Please login again.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        setLoading(false);
+        return;
+      }
+      
+      // Prepare data for update
+      const updateData: any = {
+        username: name,
+        email: email,
+        phone: phone
+      };
+      
+      // Make API call to update user profile
+      const response = await fetch(`http://localhost:5000/api/auth/update-profile/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Update localStorage with new user data
+        localStorage.setItem('username', name);
+        localStorage.setItem('email', email);
+        localStorage.setItem('phone', phone);
+        
+        setIsEditing(false);
+        setSnackbarMessage('Profile updated successfully!');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+      } else {
+        setSnackbarMessage(data.message || 'Failed to update profile');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setSnackbarMessage('Something went wrong. Please try again later.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle password change
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
       setSnackbarMessage('Passwords do not match!');
       setSnackbarSeverity('error');
@@ -65,21 +139,59 @@ const AdminProfile: React.FC = () => {
       return;
     }
     
-    // Here you would typically call an API to change the password
-    setSnackbarMessage('Password changed successfully!');
-    setSnackbarSeverity('success');
-    setSnackbarOpen(true);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSnackbarMessage('Authentication error. Please login again.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        setLoading(false);
+        return;
+      }
+      
+      // Prepare data for password update
+      const updateData = {
+        password: newPassword,
+        currentPassword: currentPassword
+      };
+      
+      // Make API call to update password
+      const response = await fetch(`http://localhost:5000/api/auth/update-profile/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSnackbarMessage('Password changed successfully!');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setSnackbarMessage(data.message || 'Failed to change password');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setSnackbarMessage('Something went wrong. Please try again later.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-        Admin Profile {isMobile ? '(Mobile View)' : ''}
-      </Typography>
-      
       <Grid container spacing={isMobile ? 2 : 3}>
         {/* Profile Information */}
         <Grid item xs={12} md={6}>
@@ -115,7 +227,7 @@ const AdminProfile: React.FC = () => {
                   color: '#333'
                 }}
               >
-                <Person sx={{ fontSize: isMobile ? 48 : 60 }} />
+                {name ? name.charAt(0).toUpperCase() : 'A'}
               </Avatar>
               
               {isEditing && (
@@ -180,12 +292,13 @@ const AdminProfile: React.FC = () => {
             {isEditing && (
               <Button
                 variant="contained"
-                startIcon={<Save />}
+                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Save />}
                 fullWidth
                 onClick={handleSaveProfile}
+                disabled={loading}
                 sx={{ mt: 3 }}
               >
-                Save Changes
+                {loading ? 'Saving...' : 'Save Changes'}
               </Button>
             )}
           </Paper>
@@ -251,74 +364,14 @@ const AdminProfile: React.FC = () => {
               color="primary"
               onClick={handleChangePassword}
               sx={{ mt: 3 }}
-              disabled={!currentPassword || !newPassword || !confirmPassword}
+              disabled={!currentPassword || !newPassword || !confirmPassword || loading}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
             >
-              Update Password
+              {loading ? 'Updating...' : 'Update Password'}
             </Button>
             
             <Divider sx={{ my: 3 }} />
             
-          </Paper>
-        </Grid>
-        
-        {/* Additional Information */}
-        <Grid item xs={12}>
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              p: { xs: 2, sm: 3 }, 
-              borderRadius: 2
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-              Admin Information
-            </Typography>
-            
-            <Grid container spacing={isMobile ? 2 : 3}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Box sx={{ textAlign: 'center', p: 2 }}>
-                  <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    42
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Cars Managed
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={3}>
-                <Box sx={{ textAlign: 'center', p: 2 }}>
-                  <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'secondary.main' }}>
-                    18
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Users Managed
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={3}>
-                <Box sx={{ textAlign: 'center', p: 2 }}>
-                  <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'success.main' }}>
-                    7
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Pending Reviews
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12} sm={6} md={3}>
-                <Box sx={{ textAlign: 'center', p: 2 }}>
-                  <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
-                    3
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Payment Issues
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
           </Paper>
         </Grid>
       </Grid>

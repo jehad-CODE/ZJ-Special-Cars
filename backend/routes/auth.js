@@ -93,10 +93,24 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Get user profile
+router.get('/profile', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Update user profile
 router.put('/update-profile/:id', auth, async (req, res) => {
   try {
-    const { username, email, phone, password } = req.body;
+    const { username, email, phone, password, currentPassword } = req.body;
     const userId = req.params.id;
     
     // Security check - users can only update their own profile unless they're admin
@@ -110,10 +124,18 @@ router.put('/update-profile/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    // Verify current password if provided and if password change is requested
+    if (password && currentPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+    }
+    
     // Update basic info
-    user.username = username || user.username;
-    user.email = email || user.email;
-    user.phone = phone || user.phone;
+    if (username) user.username = username;
+    if (email) user.email = email;
+    if (phone) user.phone = phone;
     
     // Update password if provided
     if (password) {

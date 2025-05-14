@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, Button, Typography, useMediaQuery, useTheme, 
-  Drawer, IconButton, Divider, Avatar
+  Drawer, IconButton, Divider, Avatar, CircularProgress
 } from '@mui/material';
 import { 
   Dashboard, CarRepair, PeopleAlt, AddCircle, 
-  Settings, Payment, Menu, Close, Person
+  Settings, Menu, Close
 } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Logout from '@mui/icons-material/Logout';
 
 // Example Pages for Admin
@@ -15,14 +15,34 @@ import ManageCars from './ManageCars';
 import ManageUsers from './ManageUsers';
 import ManageAccessories from './ManageAccessories';
 import ReviewCarSubmissions from './ReviewCarSubmissions';
-import CheckPaymentStatus from './CheckPaymentStatus';
+import AdminDashboardStats from './AdminDashboardStats'; // New component for the stats
 import AdminProfile from './AdminProfile'; 
 
 const AdminDashboard: React.FC = () => {
-  const [activeSection, setActiveSection] = useState('ManageUsers');
+  const [activeSection, setActiveSection] = useState('AdminDashboardStats');
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [adminName, setAdminName] = useState('Admin User');
+  const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/sign-in');
+      return;
+    }
+
+    // Get admin name from localStorage
+    const username = localStorage.getItem('username');
+    if (username) {
+      setAdminName(username);
+    }
+    
+    setLoading(false);
+  }, [navigate]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -34,6 +54,33 @@ const AdminDashboard: React.FC = () => {
       setMobileOpen(false);
     }
   };
+
+  const handleLogout = () => {
+    // Clear all user data from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('email');
+    localStorage.removeItem('phone');
+    localStorage.removeItem('userId');
+    
+    // Redirect to sign-in page
+    navigate('/sign-in');
+  };
+
+  // Show loading indicator while checking auth
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        backgroundColor: '#1a1a1a'
+      }}>
+        <CircularProgress color="primary" />
+      </Box>
+    );
+  }
 
   const drawerContent = (
     <Box sx={{
@@ -53,14 +100,40 @@ const AdminDashboard: React.FC = () => {
       
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 3 }}>
         <Avatar sx={{ width: 60, height: 60, bgcolor: '#ffeb3b', color: '#333', mb: 1 }}>
-          <Person fontSize="large" />
+          {adminName ? adminName.charAt(0).toUpperCase() : 'A'}
         </Avatar>
-        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Admin Panel</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{adminName}</Typography>
+        <Typography variant="body2" sx={{ color: '#aaa' }}>Administrator</Typography>
       </Box>
       
       <Divider sx={{ bgcolor: 'rgba(255,255,255,0.1)', my: 1 }} />
 
       <Box sx={{ display: 'flex', flexDirection: 'column', p: 2, flex: 1, overflowY: 'auto' }}>
+        <Button
+          onClick={() => handleNavClick('AdminDashboardStats')}
+          sx={{
+            color: 'white',
+            width: '100%',
+            margin: '6px 0',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            transition: 'all 0.3s ease',
+            backgroundColor: activeSection === 'AdminDashboardStats' ? '#444' : 'transparent',
+            '&:hover': {
+              backgroundColor: '#444',
+              transform: isMobile ? 'none' : 'translateX(8px)',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+            },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '12px',
+          }}
+          startIcon={<Dashboard sx={{ fontSize: 24, color: '#3498db' }} />}
+        >
+          <Typography variant="body1" sx={{ fontSize: '15px' }}>Dashboard</Typography>
+        </Button>
+
         <Button
           onClick={() => handleNavClick('ManageUsers')}
           sx={{
@@ -162,31 +235,6 @@ const AdminDashboard: React.FC = () => {
         </Button>
 
         <Button
-          onClick={() => handleNavClick('CheckPaymentStatus')}
-          sx={{
-            color: 'white',
-            width: '100%',
-            margin: '6px 0',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            transition: 'all 0.3s ease',
-            backgroundColor: activeSection === 'CheckPaymentStatus' ? '#444' : 'transparent',
-            '&:hover': {
-              backgroundColor: '#444',
-              transform: isMobile ? 'none' : 'translateX(8px)',
-              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-            },
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            gap: '12px',
-          }}
-          startIcon={<Payment sx={{ fontSize: 24, color: '#f39c12' }} />}
-        >
-          <Typography variant="body1" sx={{ fontSize: '15px' }}>Check Payments</Typography>
-        </Button>
-
-        <Button
           onClick={() => handleNavClick('AdminProfile')}
           sx={{
             color: 'white',
@@ -211,8 +259,6 @@ const AdminDashboard: React.FC = () => {
           <Typography variant="body1" sx={{ fontSize: '15px' }}>Admin Profile</Typography>
         </Button>
       </Box>
-      
-      
     </Box>
   );
 
@@ -239,31 +285,33 @@ const AdminDashboard: React.FC = () => {
           />
         </Box>
 
-        {/* Mobile Menu Toggle */}
-        {isMobile && (
+        {/* Right side with menu toggle and logout */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* Logout button - visible on all devices */}
           <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ color: 'white' }}
-          >
-            <Menu />
-          </IconButton>
-        )}
-
-        {!isMobile && (
-          <IconButton
-            component={Link}
-            to="/sign-in"
+            onClick={handleLogout}
             sx={{
               color: 'white',
+              mr: isMobile ? 1 : 0,
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
             }}
           >
             <Logout />
           </IconButton>
-        )}
+
+          {/* Mobile Menu Toggle - only visible on mobile */}
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="end"
+              onClick={handleDrawerToggle}
+              sx={{ color: 'white' }}
+            >
+              <Menu />
+            </IconButton>
+          )}
+        </Box>
       </Box>
 
       {/* Main Body */}
@@ -302,11 +350,11 @@ const AdminDashboard: React.FC = () => {
           height: 'calc(100vh - 70px)',
           backgroundColor: '#1e1e1e'
         }}>
+          {activeSection === 'AdminDashboardStats' && <AdminDashboardStats />}
           {activeSection === 'ManageUsers' && <ManageUsers />}
           {activeSection === 'ManageCars' && <ManageCars />}
           {activeSection === 'ManageAccessories' && <ManageAccessories />}
           {activeSection === 'ReviewCarSubmissions' && <ReviewCarSubmissions />}
-          {activeSection === 'CheckPaymentStatus' && <CheckPaymentStatus />}
           {activeSection === 'AdminProfile' && <AdminProfile />}
         </Box>
       </Box>

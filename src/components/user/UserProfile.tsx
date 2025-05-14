@@ -70,7 +70,7 @@ const UserProfile: React.FC = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-auth-token': token || ''
+          'Authorization': token || ''
         },
         body: JSON.stringify(updateData)
       });

@@ -332,7 +332,7 @@ const SellYourCar: React.FC = () => {
               label="Email/Username" 
               value={carEmail} 
               fullWidth required 
-              disabled // Disabled since it's auto-populated
+              disabled 
               InputProps={{ style: { color: 'white' } }} 
             />
           </Grid>
@@ -513,7 +513,7 @@ const SellYourCar: React.FC = () => {
       sx={{
         position: 'relative',
         minHeight: '100vh',
-        backgroundImage: `url('/src/assets/SellYourCarBackground.jpg')`,
+        backgroundImage: `url('/src/assets/Login8.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         display: 'flex',

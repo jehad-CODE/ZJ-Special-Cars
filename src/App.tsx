@@ -19,7 +19,7 @@ import ManageCars from './components/admin/ManageCars';
 import ManageUsers from './components/admin/ManageUsers';
 import ManageAccessories from './components/admin/ManageAccessories';
 import ReviewCarSubmissions from './components/admin/ReviewCarSubmissions';
-import CheckPaymentStatus from './components/admin/CheckPaymentStatus';
+import CheckPaymentStatus from './components/admin/AdminDashboardStats';
 import AdminProfile from './components/admin/AdminProfile'; // Added AdminProfile import
 
 // Staff Side Components

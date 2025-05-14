@@ -118,7 +118,7 @@ const SignIn: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
           height: '100vh',
-          backgroundImage: `url('src/assets/Login4.jpg')`,
+          backgroundImage: `url('src/assets/Login5.jpg')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundColor: '#000',
@@ -152,7 +152,7 @@ const SignIn: React.FC = () => {
             maxWidth: '400px',
             position: 'relative',
             zIndex: 2,
-            backdropFilter: 'blur(14px)',
+            backdropFilter: 'blur(4px)',
             border: '1px solid rgba(255, 255, 255, 0.15)',
           }}
         >
