@@ -22,6 +22,24 @@ const auth = async (req, res, next) => {
   }
 };
 
+// Admin/Staff check middleware
+const isAdminOrStaff = async (req, res, next) => {
+  if (req.user.role === 'admin' || req.user.role === 'staff') {
+    next();
+  } else {
+    return res.status(403).json({ message: 'Access denied. Admin or Staff role required.' });
+  }
+};
+
+// Admin-only check middleware
+const isAdmin = async (req, res, next) => {
+  if (req.user.role === 'admin') {
+    next();
+  } else {
+    return res.status(403).json({ message: 'Access denied. Admin role required.' });
+  }
+};
+
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
@@ -113,8 +131,8 @@ router.put('/update-profile/:id', auth, async (req, res) => {
     const { username, email, phone, password, currentPassword } = req.body;
     const userId = req.params.id;
     
-    // Security check - users can only update their own profile unless they're admin
-    if (req.user.id !== userId && req.user.role !== 'admin') {
+    // Security check - users can only update their own profile unless they're admin or staff
+    if (req.user.id !== userId && req.user.role !== 'admin' && req.user.role !== 'staff') {
       return res.status(403).json({ message: 'Not authorized to update this profile' });
     }
     
@@ -168,12 +186,12 @@ router.put('/update-profile/:id', auth, async (req, res) => {
   }
 });
 
-// Get all users (admin only)
+// Get all users (admin and staff)
 router.get('/users', auth, async (req, res) => {
   try {
-    // Check if the requesting user is an admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized. Admin access required.' });
+    // Check if the requesting user is an admin or staff
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      return res.status(403).json({ message: 'Access denied. Admin or Staff role required.' });
     }
     
     // Fetch all users, excluding password field
@@ -185,14 +203,9 @@ router.get('/users', auth, async (req, res) => {
   }
 });
 
-// Create a new user (admin only)
-router.post('/users', auth, async (req, res) => {
+// Create a new user (admin and staff)
+router.post('/users', auth, isAdminOrStaff, async (req, res) => {
   try {
-    // Check if the requesting user is an admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized. Admin access required.' });
-    }
-    
     const { username, email, password, phone, role } = req.body;
     
     // Check if user already exists
@@ -205,13 +218,19 @@ router.post('/users', auth, async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
+    // Staff can only create regular users, not other staff or admins
+    let userRole = role || 'user';
+    if (req.user.role === 'staff' && (userRole === 'staff' || userRole === 'admin')) {
+      userRole = 'user'; // Force to user role if staff tries to create admin/staff
+    }
+    
     // Create new user
     const user = new User({
       username,
       email,
       password: hashedPassword,
       phone,
-      role: role || 'user' // Use provided role or default to 'user'
+      role: userRole
     });
     
     await user.save();
@@ -232,49 +251,54 @@ router.post('/users', auth, async (req, res) => {
   }
 });
 
-// Update a user (admin only)
+// Update a user (admin or staff)
 router.put('/users/:id', auth, async (req, res) => {
   try {
-    // Check if the requesting user is an admin
-    if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
-      return res.status(403).json({ message: 'Not authorized to update this user' });
+    // Check if the requesting user is an admin or staff
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      return res.status(403).json({ message: 'Access denied. Admin or Staff role required.' });
     }
-    
+
     const { username, email, password, phone, role } = req.body;
     const userId = req.params.id;
     
-    // Find user by ID
-    const user = await User.findById(userId);
-    if (!user) {
+    // Get the user to be updated first
+    const userToUpdate = await User.findById(userId);
+    if (!userToUpdate) {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    // Staff can only update regular users, not other staff or admins
+    if (req.user.role === 'staff' && userToUpdate.role !== 'user') {
+      return res.status(403).json({ message: 'Staff can only update regular users' });
+    }
+    
     // Update fields
-    if (username) user.username = username;
-    if (email) user.email = email;
-    if (phone) user.phone = phone;
+    if (username) userToUpdate.username = username;
+    if (email) userToUpdate.email = email;
+    if (phone) userToUpdate.phone = phone;
     
     // Only allow admins to change roles
     if (role && req.user.role === 'admin') {
-      user.role = role;
+      userToUpdate.role = role;
     }
     
     // Update password if provided
     if (password) {
       const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(password, salt);
+      userToUpdate.password = await bcrypt.hash(password, salt);
     }
     
-    await user.save();
+    await userToUpdate.save();
     
     res.json({ 
       message: 'User updated successfully',
       user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        phone: user.phone,
-        role: user.role
+        id: userToUpdate._id,
+        username: userToUpdate.username,
+        email: userToUpdate.email,
+        phone: userToUpdate.phone,
+        role: userToUpdate.role
       }
     });
   } catch (err) {
@@ -289,14 +313,9 @@ router.put('/users/:id', auth, async (req, res) => {
   }
 });
 
-// Delete a user (admin only)
-router.delete('/users/:id', auth, async (req, res) => {
+// Delete a user (admin and staff)
+router.delete('/users/:id', auth, isAdminOrStaff, async (req, res) => {
   try {
-    // Check if the requesting user is an admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized. Admin access required.' });
-    }
-    
     const userId = req.params.id;
     
     // Check if user exists
@@ -308,6 +327,11 @@ router.delete('/users/:id', auth, async (req, res) => {
     // Prevent deleting yourself
     if (userId === req.user.id) {
       return res.status(400).json({ message: 'Cannot delete your own account' });
+    }
+    
+    // Staff can only delete regular users, not other staff or admins
+    if (req.user.role === 'staff' && user.role !== 'user') {
+      return res.status(403).json({ message: 'Staff can only delete regular users' });
     }
     
     // Delete the user

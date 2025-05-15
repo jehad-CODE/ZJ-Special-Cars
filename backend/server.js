@@ -139,11 +139,8 @@ if (!fs.existsSync('uploads')) {
   console.log('Created uploads directory');
 }
 
-// Database connection
-mongoose.connect('mongodb://localhost:27017/ZJSpecialCars', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+// Database connection - UPDATED WITHOUT DEPRECATED OPTIONS
+mongoose.connect('mongodb://localhost:27017/ZJSpecialCars')
 .then(() => console.log('MongoDB connected...'))
 .catch(err => console.log(err));
 

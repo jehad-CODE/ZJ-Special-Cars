@@ -20,13 +20,15 @@ import ManageUsers from './components/admin/ManageUsers';
 import ManageAccessories from './components/admin/ManageAccessories';
 import ReviewCarSubmissions from './components/admin/ReviewCarSubmissions';
 import CheckPaymentStatus from './components/admin/AdminDashboardStats';
-import AdminProfile from './components/admin/AdminProfile'; // Added AdminProfile import
+import AdminProfile from './components/admin/AdminProfile';
 
 // Staff Side Components
 import StaffDashboard from './components/staff/StaffDashboard';
-import ManageOrders from './components/staff/ManageOrders';
-import GenerateReports from './components/staff/GenerateReports';
-import ManageDelivery from './components/staff/ManageDelivery'; // Moved to staff imports
+// Import staff-specific components
+import StaffManageUsers from './components/staff/ManageUsers';
+import StaffReviewCarSubmissions from './components/staff/ReviewCarSubmissions';
+import StaffProfile from './components/staff/StaffProfile';
+import StaffDashboardStats from './components/staff/StaffDashboardStats';
 
 // Auth
 import SignIn from './components/auth/SignIn';
@@ -73,15 +75,16 @@ const App: React.FC = () => {
             <Route path="manage-accessories" element={<ManageAccessories />} />
             <Route path="review-car-submissions" element={<ReviewCarSubmissions />} />
             <Route path="check-payment-status" element={<CheckPaymentStatus />} />
-            <Route path="admin-profile" element={<AdminProfile />} /> {/* Added AdminProfile route */}
+            <Route path="admin-profile" element={<AdminProfile />} />
           </Route>
 
-          {/* Staff Side Routes */}
+          {/* Staff Side Routes - Updated with limited functionality */}
           <Route path="/staff" element={<StaffDashboard />}>
-            <Route path="manage-orders" element={<ManageOrders />} />
-            <Route path="generate-reports" element={<GenerateReports />} />
-            <Route path="manage-delivery" element={<ManageDelivery />} />
-            <Route path="check-payment-status" element={<CheckPaymentStatus />} />
+            <Route index element={<StaffDashboardStats />} />
+            <Route path="dashboard" element={<StaffDashboardStats />} />
+            <Route path="manage-users" element={<StaffManageUsers />} />
+            <Route path="review-car-submissions" element={<StaffReviewCarSubmissions />} />
+            <Route path="profile" element={<StaffProfile />} />
           </Route>
         </Routes>
       </Router>

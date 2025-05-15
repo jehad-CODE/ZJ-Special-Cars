@@ -42,150 +42,174 @@ const Dashboard: React.FC = () => {
   const handleAccessoriesMenuClick = (event: React.MouseEvent<HTMLElement>) => setAccessoriesAnchorEl(event.currentTarget);
   const handleClose = () => { setAnchorEl(null); setCarsAnchorEl(null); setAccessoriesAnchorEl(null); };
 
-  const handleNormalSearch = async () => {
-    if (!searchQuery.trim()) return;
-    setLoading(true);
-    try {
-      const [carsRes, accessoriesRes, lifeRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/cars`),
-        axios.get(`${API_BASE_URL}/api/car-accessories`),
-        axios.get(`${API_BASE_URL}/api/life-products`)
-      ]);
 
-      let allResults = [];
-      const cars = carsRes.data.filter((car: any) => 
-        car.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        car.model.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      allResults = [...cars.map((item: any) => ({ ...item, itemType: 'car' }))];
 
-      const accessories = accessoriesRes.data.filter((item: any) => 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      allResults = [...allResults, ...accessories.map((item: any) => ({ ...item, itemType: 'accessory' }))];
+// NORMAL SEARCH - Basic search without additional filters
+const handleNormalSearch = async () => {
+ // Skip empty searches
+ if (!searchQuery.trim()) return;
+ setLoading(true);
+ try {
+   // Fetch data from all three sources at once for better performance
+   const [carsRes, accessoriesRes, lifeRes] = await Promise.all([
+     axios.get(`${API_BASE_URL}/api/cars`),
+     axios.get(`${API_BASE_URL}/api/car-accessories`),
+     axios.get(`${API_BASE_URL}/api/life-products`)
+   ]);
 
-      const lifeProducts = lifeRes.data.filter((item: any) => 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      allResults = [...allResults, ...lifeProducts.map((item: any) => ({ ...item, itemType: 'life' }))];
+   let allResults = [];
+   
+   // Filter cars - Case insensitive search (works with any capitalization)
+   // Searches both name and model fields (e.g., "BMW" or "bmw" will both match)
+   const cars = carsRes.data.filter((car: any) => 
+     car.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     car.model.toLowerCase().includes(searchQuery.toLowerCase())
+   );
+   allResults = [...cars.map((item: any) => ({ ...item, itemType: 'car' }))];
 
-      setSearchResults(allResults);
-      setResultsOpen(true);
-    } catch (error) {
-      console.error('Search error:', error);
-    }
-    setLoading(false);
-  };
+   // Filter accessories - Supports partial matching (even single letter)
+   const accessories = accessoriesRes.data.filter((item: any) => 
+     item.name.toLowerCase().includes(searchQuery.toLowerCase())
+   );
+   allResults = [...allResults, ...accessories.map((item: any) => ({ ...item, itemType: 'accessory' }))];
 
-  const handleAdvancedSearch = async () => {
-    setLoading(true);
-    try {
-      let results = [];
-      
-      if (searchType === 'cars') {
-        const carsRes = await axios.get(`${API_BASE_URL}/api/cars`);
-        let cars = carsRes.data;
-        
-        if (searchQuery) {
-          cars = cars.filter((car: any) => 
-            car.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            car.model.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        }
-        
-        if (carType) {
-          cars = cars.filter((car: any) => car.type === carType);
-        }
-        
-        if (minPrice || maxPrice) {
-          cars = cars.filter((car: any) => {
-            const price = Number(car.price.replace(/[^0-9]/g, ''));
-            return (!minPrice || price >= Number(minPrice)) && 
-                   (!maxPrice || price <= Number(maxPrice));
-          });
-        }
-        
-        results = cars.map((item: any) => ({ ...item, itemType: 'car' }));
-      } else {
-        const [accessoriesRes, lifeRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/car-accessories`),
-          axios.get(`${API_BASE_URL}/api/life-products`)
-        ]);
-        
-        let accessories = accessoriesRes.data;
-        let lifeProducts = lifeRes.data;
-        
-        if (searchQuery) {
-          accessories = accessories.filter((item: any) => 
-            item.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-          lifeProducts = lifeProducts.filter((item: any) => 
-            item.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        }
-        
-        if (minPrice || maxPrice) {
-          const filterByPrice = (items: any[]) => items.filter((item: any) => {
-            const price = Number(item.price.replace(/[^0-9]/g, ''));
-            return (!minPrice || price >= Number(minPrice)) && 
-                   (!maxPrice || price <= Number(maxPrice));
-          });
-          
-          accessories = filterByPrice(accessories);
-          lifeProducts = filterByPrice(lifeProducts);
-        }
-        
-        results = [
-          ...accessories.map((item: any) => ({ ...item, itemType: 'accessory' })),
-          ...lifeProducts.map((item: any) => ({ ...item, itemType: 'life' }))
-        ];
-      }
-      
-      setSearchResults(results);
-      setSearchOpen(false);
-      setResultsOpen(true);
-    } catch (error) {
-      console.error('Search error:', error);
-    }
-    setLoading(false);
-  };
+   // Filter life products with same approach
+   const lifeProducts = lifeRes.data.filter((item: any) => 
+     item.name.toLowerCase().includes(searchQuery.toLowerCase())
+   );
+   allResults = [...allResults, ...lifeProducts.map((item: any) => ({ ...item, itemType: 'life' }))];
 
-  const handleClearSearch = () => {
-    setSearchQuery('');
-    setMinPrice('');
-    setMaxPrice('');
-    setCarType('');
-  };
+   setSearchResults(allResults);
+   setResultsOpen(true);
+ } catch (error) {
+   console.error('Search error:', error);
+ }
+ setLoading(false);
+};
 
-  const handleItemClick = (item: any) => {
-    if (item.itemType === 'car') {
-      if (item.type === 'Sport') navigate('/menu/sport', { state: { selectedItem: item } });
-      else if (item.type === 'Classic') navigate('/menu/classic', { state: { selectedItem: item } });
-      else if (item.type === 'Hybrid/Electric') navigate('/menu/hybrid-electric', { state: { selectedItem: item } });
-    } else if (item.itemType === 'accessory') {
-      navigate('/menu/cars-accessories', { state: { selectedItem: item } });
-    } else {
-      navigate('/menu/life-product', { state: { selectedItem: item } });
-    }
-    setResultsOpen(false);
-  };
+// ADVANCED SEARCH - Provides additional filtering options
+const handleAdvancedSearch = async () => {
+ setLoading(true);
+ try {
+   let results = [];
+   
+   // Handle car search with additional filters
+   if (searchType === 'cars') {
+     const carsRes = await axios.get(`${API_BASE_URL}/api/cars`);
+     let cars = carsRes.data;
+     
+     // Text search - Case insensitive, works with any capitalization
+     if (searchQuery) {
+       cars = cars.filter((car: any) => 
+         car.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         car.model.toLowerCase().includes(searchQuery.toLowerCase())
+       );
+     }
+     
+     // Car type filter (Sport, Classic, or Hybrid/Electric)
+     if (carType) {
+       cars = cars.filter((car: any) => car.type === carType);
+     }
+     
+     // Price range filter - Handles various price formats (e.g., "$45,000")
+     if (minPrice || maxPrice) {
+       cars = cars.filter((car: any) => {
+         // Extract numeric value from price string
+         const price = Number(car.price.replace(/[^0-9]/g, ''));
+         return (!minPrice || price >= Number(minPrice)) && 
+                (!maxPrice || price <= Number(maxPrice));
+       });
+     }
+     
+     results = cars.map((item: any) => ({ ...item, itemType: 'car' }));
+   } else {
+     // Handle accessories and life products search
+     const [accessoriesRes, lifeRes] = await Promise.all([
+       axios.get(`${API_BASE_URL}/api/car-accessories`),
+       axios.get(`${API_BASE_URL}/api/life-products`)
+     ]);
+     
+     let accessories = accessoriesRes.data;
+     let lifeProducts = lifeRes.data;
+     
+     // Text search filter - Works with any case (upper/lower/mixed)
+     if (searchQuery) {
+       accessories = accessories.filter((item: any) => 
+         item.name.toLowerCase().includes(searchQuery.toLowerCase())
+       );
+       lifeProducts = lifeProducts.filter((item: any) => 
+         item.name.toLowerCase().includes(searchQuery.toLowerCase())
+       );
+     }
+     
+     // Price filter for both product types
+     if (minPrice || maxPrice) {
+       const filterByPrice = (items: any[]) => items.filter((item: any) => {
+         const price = Number(item.price.replace(/[^0-9]/g, ''));
+         return (!minPrice || price >= Number(minPrice)) && 
+                (!maxPrice || price <= Number(maxPrice));
+       });
+       
+       accessories = filterByPrice(accessories);
+       lifeProducts = filterByPrice(lifeProducts);
+     }
+     
+     results = [
+       ...accessories.map((item: any) => ({ ...item, itemType: 'accessory' })),
+       ...lifeProducts.map((item: any) => ({ ...item, itemType: 'life' }))
+     ];
+   }
+   
+   setSearchResults(results);
+   setSearchOpen(false);
+   setResultsOpen(true);
+ } catch (error) {
+   console.error('Search error:', error);
+ }
+ setLoading(false);
+};
 
-  const getImageUrl = (imagePath: string) => {
-    if (!imagePath) return '';
-    if (imagePath.startsWith('http')) return imagePath;
-    const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-    return `${API_BASE_URL}${normalizedPath}`;
-  };
+// Reset all search filters to default values
+const handleClearSearch = () => {
+ setSearchQuery('');
+ setMinPrice('');
+ setMaxPrice('');
+ setCarType('');
+};
 
-  const handleImageError = (id: string) => {
-    setImageError(prev => ({ ...prev, [id]: true }));
-  };
-  
-  const handleSignOut = () => {
-    localStorage.clear();
-    setIsLoggedIn(false);
-    navigate('/');
-  };
+// Navigate to appropriate page based on result type
+const handleItemClick = (item: any) => {
+ if (item.itemType === 'car') {
+   if (item.type === 'Sport') navigate('/menu/sport', { state: { selectedItem: item } });
+   else if (item.type === 'Classic') navigate('/menu/classic', { state: { selectedItem: item } });
+   else if (item.type === 'Hybrid/Electric') navigate('/menu/hybrid-electric', { state: { selectedItem: item } });
+ } else if (item.itemType === 'accessory') {
+   navigate('/menu/cars-accessories', { state: { selectedItem: item } });
+ } else {
+   navigate('/menu/life-product', { state: { selectedItem: item } });
+ }
+ setResultsOpen(false);
+};
+
+// Convert relative image paths to full URLs
+const getImageUrl = (imagePath: string) => {
+ if (!imagePath) return '';
+ if (imagePath.startsWith('http')) return imagePath;
+ const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+ return `${API_BASE_URL}${normalizedPath}`;
+};
+
+// Track failed images to show placeholders instead
+const handleImageError = (id: string) => {
+ setImageError(prev => ({ ...prev, [id]: true }));
+};
+
+// Clear local storage and redirect to home
+const handleSignOut = () => {
+ localStorage.clear();
+ setIsLoggedIn(false);
+ navigate('/');
+};
 
   const gradientBg = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)';
   const glassMorph = {
