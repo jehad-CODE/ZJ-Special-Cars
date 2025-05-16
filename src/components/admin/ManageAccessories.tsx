@@ -23,6 +23,7 @@ interface LifeAccessory {
   category: string;
   brand?: string;
   stock?: number;
+  sellerContact?: string; // Added sellerContact field
   type?: 'life';
   createdAt?: string;
 }
@@ -86,7 +87,6 @@ const ManageAccessories: React.FC = () => {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   
   const itemsPerPage = 9;
-
   // Fetch accessories when type or sort changes
   useEffect(() => {
     fetchAccessories();
@@ -182,7 +182,7 @@ const ManageAccessories: React.FC = () => {
     setCompatibility('');
     setInstallation('');
     setDetails('');
-    setSellerContact('');
+    setSellerContact(''); // Reset sellerContact for both types
     selectedImages.forEach(image => URL.revokeObjectURL(image.preview));
     setSelectedImages([]);
   };
@@ -210,6 +210,7 @@ const ManageAccessories: React.FC = () => {
       setDescription(lifeAcc.description);
       setBrand(lifeAcc.brand || '');
       setStock(lifeAcc.stock ? String(lifeAcc.stock) : '');
+      setSellerContact(lifeAcc.sellerContact || ''); // Set sellerContact for life products
     } else {
       const carAcc = accessory as CarAccessory;
       setBrand(carAcc.brand);
@@ -263,9 +264,7 @@ const ManageAccessories: React.FC = () => {
     
     const newImageFiles = imageFiles.filter((_, index) => index !== indexToRemove);
     setImageFiles(newImageFiles);
-  };
-
-  const uploadImages = async (type: 'car' | 'life') => {
+  };const uploadImages = async (type: 'car' | 'life') => {
     if (imageFiles.length === 0) return [];
     
     const formData = new FormData();
@@ -300,7 +299,7 @@ const ManageAccessories: React.FC = () => {
         return;
       }
     } else {
-      if (!name || !price || !category || !description) {
+      if (!name || !price || !category || !description || !sellerContact) { // Added sellerContact validation
         alert('Please fill all required fields');
         return;
       }
@@ -337,6 +336,7 @@ const ManageAccessories: React.FC = () => {
           category,
           brand: brand || undefined,
           stock: stock ? Number(stock) : undefined,
+          sellerContact, // Added sellerContact for life products
           images: imagePaths
         };
       }
@@ -474,7 +474,6 @@ const ManageAccessories: React.FC = () => {
           </Button>
         </Stack>
       </Box>
-
       {/* Accessory listing */}
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -516,9 +515,12 @@ const ManageAccessories: React.FC = () => {
                       <Typography variant="body2" noWrap sx={{ mb: 1 }}>{getDescription(accessory)}</Typography>
                       <Typography variant="body2">Category: {accessory.category}</Typography>
                       <Typography variant="body2">Brand: {accessory.brand}</Typography>
-                      {accessory.type === 'car' && (
-                        <Typography variant="body2">Contact: {(accessory as CarAccessory).sellerContact}</Typography>
-                      )}
+                      {/* Display seller contact for both types */}
+                      <Typography variant="body2">Contact: {
+                        accessory.type === 'car' 
+                          ? (accessory as CarAccessory).sellerContact
+                          : (accessory as LifeAccessory).sellerContact
+                      }</Typography>
                       {accessory.type === 'life' && (accessory as LifeAccessory).stock !== undefined && (
                         <Typography variant="body2">Stock: {(accessory as LifeAccessory).stock}</Typography>
                       )}
@@ -624,7 +626,6 @@ const ManageAccessories: React.FC = () => {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-          {/* Form content - unchanged */}
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
@@ -763,6 +764,19 @@ const ManageAccessories: React.FC = () => {
                       multiline 
                       rows={3}
                       onChange={(e) => setDescription(e.target.value)}
+                      fullWidth 
+                      required 
+                      InputProps={{ style: { color: 'white' } }}
+                      InputLabelProps={{ style: { color: '#aaa' } }} 
+                    />
+                  </Grid>
+                  
+                  {/* Add Seller Contact field for Life Products */}
+                  <Grid item xs={12}>
+                    <TextField 
+                      label="Seller Contact" 
+                      value={sellerContact} 
+                      onChange={(e) => setSellerContact(e.target.value)}
                       fullWidth 
                       required 
                       InputProps={{ style: { color: 'white' } }}

@@ -477,7 +477,7 @@ const LifeProduct: React.FC = () => {
                 </Grid>
                 
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Details:</Typography>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}></Typography>
                   <Typography variant="body1" sx={{
                     maxHeight: '150px',
                     overflowY: 'auto'
