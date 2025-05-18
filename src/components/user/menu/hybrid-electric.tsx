@@ -105,7 +105,14 @@ const HybridElectric: React.FC = () => {
     setCurrentImageIndex(0);
     setOpen(true);
   };
-
+  // Helper function to format price with $ sign
+  const formatPrice = (price: string) => {
+    // Check if price already has a $ sign
+    if (price.includes('$')) {
+      return price;
+    }
+    return `$${price}`;
+  };
   const handleNextImage = () => {
     if (currentCar && currentImageIndex < currentCar.images.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
@@ -282,8 +289,7 @@ const HybridElectric: React.FC = () => {
                       <Typography variant="h6" sx={{ color: 'gray' }}>
                         {car.year} • {car.mileage} km
                       </Typography>
-                      <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
-                        {car.price}
+                      <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>{formatPrice(car.price)}
                       </Typography>
                     </Box>
                     <Button 
@@ -424,8 +430,9 @@ const HybridElectric: React.FC = () => {
                   <Typography variant="subtitle2" color="text.secondary">Year:</Typography>
                   <Typography variant="body1">{currentCar.year}</Typography>
 
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Price:</Typography>
-                  <Typography variant="body1" sx={{ color: 'green', fontWeight: 'bold' }}>{currentCar.price}</Typography>
+                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Price:</Typography>
+                    <Typography variant="body1" sx={{ color: 'green', fontWeight: 'bold' }}>{formatPrice(currentCar.price)}
+                    </Typography>
 
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Mileage:</Typography>
                   <Typography variant="body1">{currentCar.mileage}</Typography>

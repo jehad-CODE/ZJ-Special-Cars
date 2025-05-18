@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Typography,
   Box,
   Button,
   Table,
@@ -162,7 +161,6 @@ const ManageUsers: React.FC = () => {
           sortedUsers.sort((a, b) => b.email.localeCompare(a.email));
           break;
         case 'newest':
-          // Assuming _id contains a timestamp (MongoDB default)
           sortedUsers.sort((a, b) => b._id.localeCompare(a._id));
           break;
         case 'oldest':
@@ -364,9 +362,6 @@ const ManageUsers: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
-        Manage {viewType === 'staff' ? 'Staff' : viewType === 'admin' ? 'Admins' : 'Users'}
-      </Typography>
 
       {/* Filters and Actions */}
       <Box sx={{ 
@@ -637,16 +632,6 @@ const ManageUsers: React.FC = () => {
                   <MenuItem value="admin">Admin</MenuItem>
                 </Select>
               </FormControl>
-              <TextField
-                label="New Password (leave blank to keep current)"
-                name="password"
-                type="password"
-                value={(editUser as any).password || ''}
-                onChange={handleEditInputChange}
-                fullWidth
-                InputProps={{ style: { color: 'white' } }}
-                InputLabelProps={{ style: { color: '#aaa' } }}
-              />
             </Stack>
           )}
         </DialogContent>

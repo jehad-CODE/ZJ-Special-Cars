@@ -124,6 +124,15 @@ const CarsAccessories: React.FC = () => {
     return `${API_BASE_URL}${normalizedPath}`;
   };
 
+  // Helper function to format price with $ sign
+  const formatPrice = (price: string) => {
+    // Check if price already has a $ sign
+    if (price.includes('$')) {
+      return price;
+    }
+    return `$${price}`;
+  };
+
   // Handle image loading error
   const handleImageError = (id: string) => {
     setImageError(prev => ({
@@ -292,7 +301,7 @@ const CarsAccessories: React.FC = () => {
                         {accessory.brand}
                       </Typography>
                       <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
-                        {accessory.price}
+                        {formatPrice(accessory.price)}
                       </Typography>
                     </Box>
                     <Button 
@@ -432,7 +441,7 @@ const CarsAccessories: React.FC = () => {
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">Price:</Typography>
                   <Typography variant="body1" sx={{ color: 'green', fontWeight: 'bold' }}>
-                    {currentAccessory.price}
+                    {formatPrice(currentAccessory.price)}
                   </Typography>
                   
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Brand:</Typography>

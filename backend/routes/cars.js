@@ -157,12 +157,24 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete a car
+// Delete a car (updated to check user permissions)
 router.delete('/:id', async (req, res) => {
   try {
-    const car = await Car.findByIdAndDelete(req.params.id);
+    const { userEmail, userRole } = req.body;
+    
+    // Find the car first to check ownership
+    const car = await Car.findById(req.params.id);
     if (!car) return res.status(404).json({ message: 'Car not found' });
-    res.json({ message: 'Car deleted' });
+    
+    // Check if user is authorized to delete this car
+    // Allow if: user is the seller, or user is admin/staff
+    if (car.sellerEmail !== userEmail && !['admin', 'staff'].includes(userRole)) {
+      return res.status(403).json({ message: 'Unauthorized: You can only delete your own listings' });
+    }
+    
+    // Proceed with deletion
+    await Car.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Car deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

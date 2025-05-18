@@ -415,9 +415,7 @@ const ManageAccessories: React.FC = () => {
       minHeight: 'calc(100vh - 80px)', // Ensures content fills the viewport with some padding
       position: 'relative'
     }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
-        Manage Accessories
-      </Typography>
+      
       
       {/* Type selector buttons and sort */}
       <Box sx={{ 

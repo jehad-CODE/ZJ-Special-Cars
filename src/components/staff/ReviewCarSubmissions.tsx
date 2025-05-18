@@ -294,7 +294,7 @@ const PendingCars: React.FC = () => {
           textShadow: '0px 2px 3px rgba(0,0,0,0.3)'
         }}
       >
-        Pending Cars
+       
       </Typography>
       
       {/* Filters and Actions */}

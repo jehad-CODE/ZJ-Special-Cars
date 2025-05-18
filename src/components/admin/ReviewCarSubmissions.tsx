@@ -260,7 +260,6 @@ const PendingCars: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>Pending Cars</Typography>
       
       {/* Filters and Actions */}
       <Box sx={{ 

@@ -127,6 +127,15 @@ const Classic: React.FC = () => {
     return `${API_BASE_URL}${normalizedPath}`;
   };
 
+  // Helper function to format price with $ sign
+  const formatPrice = (price: string) => {
+    // Check if price already has a $ sign
+    if (price.includes('$')) {
+      return price;
+    }
+    return `$${price}`;
+  };
+
   // Handle image loading error
   const handleImageError = (id: string) => {
     setImageError(prev => ({
@@ -283,7 +292,7 @@ const Classic: React.FC = () => {
                         {car.year} • {car.mileage} km
                       </Typography>
                       <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
-                        {car.price}
+                        {formatPrice(car.price)}
                       </Typography>
                     </Box>
                     <Button 
@@ -425,7 +434,9 @@ const Classic: React.FC = () => {
                   <Typography variant="body1">{currentCar.year}</Typography>
 
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Price:</Typography>
-                  <Typography variant="body1" sx={{ color: 'green', fontWeight: 'bold' }}>{currentCar.price}</Typography>
+                  <Typography variant="body1" sx={{ color: 'green', fontWeight: 'bold' }}>
+                    {formatPrice(currentCar.price)}
+                  </Typography>
 
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Mileage:</Typography>
                   <Typography variant="body1">{currentCar.mileage}</Typography>

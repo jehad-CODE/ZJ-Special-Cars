@@ -19,6 +19,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CardActions,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -45,6 +48,14 @@ const SellYourCar: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [carToDelete, setCarToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error'
+  });
   
   const navigate = useNavigate();
 
@@ -93,6 +104,60 @@ const SellYourCar: React.FC = () => {
       setStatus('Error loading your submissions. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // New function to handle car deletion
+  const handleDeleteCar = async (carId: string) => {
+    setCarToDelete(carId);
+    setDeleteDialogOpen(true);
+  };
+
+  // Function to confirm and execute car deletion
+  const confirmDeleteCar = async () => {
+    if (!carToDelete) return;
+    
+    try {
+      setDeleteLoading(true);
+      const token = localStorage.getItem('token');
+      const userEmail = localStorage.getItem('email');
+      const userRole = localStorage.getItem('role');
+      
+      const response = await fetch(`http://localhost:5000/api/cars/${carToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userEmail,
+          userRole
+        })
+      });
+      
+      if (response.ok) {
+        // Update UI by removing the deleted car
+        setUserCars(userCars.filter(car => car._id !== carToDelete));
+        setSnackbar({
+          open: true,
+          message: 'Listing deleted successfully',
+          severity: 'success'
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete car listing');
+      }
+    } catch (error: any) {
+      console.error('Error deleting car:', error);
+      setSnackbar({
+        open: true,
+        message: `Error: ${error.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setDeleteLoading(false);
+      setDeleteDialogOpen(false);
+      setCarToDelete(null);
     }
   };
 
@@ -263,6 +328,10 @@ const SellYourCar: React.FC = () => {
     return imagePath;
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar({...snackbar, open: false});
+  };
+
   const renderInitialButtons = () => (
     <Box sx={{ textAlign: 'center' }}>
       <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>What would you like to do?</Typography>
@@ -429,7 +498,7 @@ const SellYourCar: React.FC = () => {
         <Grid container spacing={3}>
           {userCars.map((car) => (
             <Grid item xs={12} sm={6} md={4} key={car._id}>
-              <Card sx={{ backgroundColor: '#1c1c1c', color: 'white', height: '100%' }}>
+              <Card sx={{ backgroundColor: '#1c1c1c', color: 'white', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {car.images && car.images.length > 0 ? (
                   <CardMedia
                     component="img"
@@ -452,7 +521,7 @@ const SellYourCar: React.FC = () => {
                     sx={{ objectFit: 'cover' }}
                   />
                 )}
-                <CardContent>
+                <CardContent sx={{ flexGrow: 1 }}>
                   <Typography variant="h6">{car.name} {car.model}</Typography>
                   <Typography variant="body2">Year: {car.year}</Typography>
                   <Typography variant="body2">Mileage: {car.mileage} km</Typography>
@@ -480,6 +549,18 @@ const SellYourCar: React.FC = () => {
                     </Typography>
                   )}
                 </CardContent>
+                {/* Added CardActions with Delete Button */}
+                <CardActions sx={{ justifyContent: 'flex-end', padding: '8px 16px' }}>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    size="small"
+                    onClick={() => handleDeleteCar(car._id)}
+                  >
+                    Delete
+                  </Button>
+                </CardActions>
               </Card>
             </Grid>
           ))}
@@ -503,6 +584,35 @@ const SellYourCar: React.FC = () => {
         </Button>
         <Button onClick={handleLoginRedirect} color="primary" variant="contained">
           Go to Login
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  // Delete Confirmation Dialog
+  const renderDeleteDialog = () => (
+    <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <DialogTitle>Confirm Deletion</DialogTitle>
+      <DialogContent>
+        <Typography>
+          Are you sure you want to delete this listing? This action cannot be undone.
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button 
+          onClick={() => setDeleteDialogOpen(false)} 
+          color="primary"
+          disabled={deleteLoading}
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={confirmDeleteCar} 
+          color="error" 
+          variant="contained"
+          disabled={deleteLoading}
+        >
+          {deleteLoading ? <CircularProgress size={24} /> : 'Delete'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -539,7 +649,24 @@ const SellYourCar: React.FC = () => {
         {showForm && renderForm()}
         {showSubmissions && renderSubmissions()}
         {renderLoginDialog()}
+        {renderDeleteDialog()}
       </Box>
+      
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={5000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

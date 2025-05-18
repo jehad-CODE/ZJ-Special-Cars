@@ -292,7 +292,6 @@ const ApprovedCars: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>Approved Cars</Typography>
       
       {/* Filter, Sort and Add buttons */}
       <Box sx={{ 

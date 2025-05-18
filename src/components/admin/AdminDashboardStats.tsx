@@ -107,21 +107,7 @@ const AdminDashboardStats: React.FC = () => {
 
   return (
     <Box>
-      <Typography 
-        variant="h4" 
-        sx={{ 
-          mb: 3, 
-          fontWeight: 'bold', 
-          color: 'white',
-          textTransform: 'uppercase',
-          letterSpacing: '1px',
-          textShadow: '0px 2px 3px rgba(0,0,0,0.3)'
-        }}
-      >
-        Dashboard
-      </Typography>
-      
-      {loading ? (
+        {loading ? (
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'center', 

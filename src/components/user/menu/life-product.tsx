@@ -86,6 +86,15 @@ const LifeProduct: React.FC = () => {
     return `${API_URL}${normalizedPath}`;
   };
 
+  // Helper function to format price with $ sign
+  const formatPrice = (price: string) => {
+    // Check if price already has a $ sign
+    if (price.includes('$')) {
+      return price;
+    }
+    return `$${price}`;
+  };
+
   // Handle image loading error
   const handleImageError = (id: string) => {
     setImageError(prev => ({
@@ -304,7 +313,7 @@ const LifeProduct: React.FC = () => {
                         {product.brand}
                       </Typography>
                       <Typography variant="h6" sx={{ color: 'green', fontWeight: 'bold' }}>
-                        {product.price}
+                        {formatPrice(product.price)}
                       </Typography>
                     </Box>
                     <Button 
@@ -446,7 +455,9 @@ const LifeProduct: React.FC = () => {
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">Price:</Typography>
-                  <Typography variant="body1" sx={{ color: 'green' }}>{currentProduct.price}</Typography>
+                  <Typography variant="body1" sx={{ color: 'green' }}>
+                    {formatPrice(currentProduct.price)}
+                  </Typography>
                   
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Brand:</Typography>
                   <Typography variant="body1">{currentProduct.brand}</Typography>

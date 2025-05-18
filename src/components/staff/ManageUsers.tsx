@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Typography, Box, Button, Table, TableHead, TableRow, TableCell, TableBody,
+ Box, Button, Table, TableHead, TableRow, TableCell, TableBody,
   IconButton, TextField, Stack, Dialog, DialogTitle, DialogContent, DialogActions,
   CircularProgress, Snackbar, Alert, AlertColor, Pagination, useMediaQuery, useTheme,
   RadioGroup, Radio, FormControlLabel, Paper, styled
@@ -248,10 +248,6 @@ const ManageUsers: React.FC = () => {
 
   return (
     <Box>
-      {/* Header */}
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold', color: 'white', textTransform: 'uppercase', letterSpacing: '1px', textShadow: '0px 2px 3px rgba(0,0,0,0.3)' }}>
-        Manage Users
-      </Typography>
 
       {/* Action buttons */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 3 }}>
@@ -360,7 +356,6 @@ const ManageUsers: React.FC = () => {
               <TextField label="Username" name="username" value={editUser.username} onChange={(e) => setEditUser({...editUser, username: e.target.value})} fullWidth required InputProps={{ style: { color: 'white' } }} InputLabelProps={{ style: { color: '#aaa' } }} sx={textFieldStyle} />
               <TextField label="Email" name="email" type="email" value={editUser.email} onChange={(e) => setEditUser({...editUser, email: e.target.value})} fullWidth required InputProps={{ style: { color: 'white' } }} InputLabelProps={{ style: { color: '#aaa' } }} sx={textFieldStyle} />
               <TextField label="Phone" name="phone" value={editUser.phone || ''} onChange={(e) => setEditUser({...editUser, phone: e.target.value})} fullWidth InputProps={{ style: { color: 'white' } }} InputLabelProps={{ style: { color: '#aaa' } }} sx={textFieldStyle} />
-              <TextField label="New Password (leave blank to keep current)" name="password" type="password" value={editUser.password || ''} onChange={(e) => setEditUser({...editUser, password: e.target.value})} fullWidth InputProps={{ style: { color: 'white' } }} InputLabelProps={{ style: { color: '#aaa' } }} sx={textFieldStyle} />
             </Stack>
           )}
         </DialogContent>

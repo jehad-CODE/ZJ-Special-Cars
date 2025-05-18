@@ -42,8 +42,6 @@ const Dashboard: React.FC = () => {
   const handleAccessoriesMenuClick = (event: React.MouseEvent<HTMLElement>) => setAccessoriesAnchorEl(event.currentTarget);
   const handleClose = () => { setAnchorEl(null); setCarsAnchorEl(null); setAccessoriesAnchorEl(null); };
 
-
-
 // NORMAL SEARCH - Basic search without additional filters
 const handleNormalSearch = async () => {
  // Skip empty searches
@@ -202,6 +200,15 @@ const getImageUrl = (imagePath: string) => {
 // Track failed images to show placeholders instead
 const handleImageError = (id: string) => {
  setImageError(prev => ({ ...prev, [id]: true }));
+};
+
+// Format price to ensure it has a $ symbol
+const formatPrice = (price: string) => {
+  if (!price) return '$0';
+  // If price already has a $ symbol, return as is
+  if (price.includes('$')) return price;
+  // Otherwise, add $ symbol
+  return `$${price}`;
 };
 
 // Clear local storage and redirect to home
@@ -674,17 +681,21 @@ const handleSignOut = () => {
                         backgroundColor: 'rgba(255,255,255,0.1)'
                       },
                       borderRadius: 2,
-                      overflow: 'hidden'
+                      overflow: 'hidden',
+                      height: 350, // Fixed height for all cards
+                      display: 'flex',
+                      flexDirection: 'column'
                     }}
                     onClick={() => handleItemClick(item)}
                   >
-                    {item.images && item.images.length > 0 && !imageError[item._id] ? (
-                      <Box sx={{ 
-                        width: '100%', 
-                        height: '200px',
-                        overflow: 'hidden',
-                        position: 'relative'
-                      }}>
+                    {/* Image container with fixed height */}
+                    <Box sx={{ 
+                      width: '100%', 
+                      height: 180, // Fixed height for image section
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}>
+                      {item.images && item.images.length > 0 && !imageError[item._id] ? (
                         <img
                           src={getImageUrl(item.images[0])}
                           alt={item.name}
@@ -695,30 +706,50 @@ const handleSignOut = () => {
                           }}
                           onError={() => handleImageError(item._id)}
                         />
-                      </Box>
-                    ) : (
-                      <Box sx={{ 
-                        width: '100%', 
-                        height: '200px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: 'rgba(85,85,85,0.3)'
-                      }}>
-                        <BrokenImageIcon sx={{ fontSize: 60, color: '#999' }} />
-                      </Box>
-                    )}
+                      ) : (
+                        <Box sx={{ 
+                          width: '100%', 
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'rgba(85,85,85,0.3)'
+                        }}>
+                          <BrokenImageIcon sx={{ fontSize: 60, color: '#999' }} />
+                        </Box>
+                      )}
+                    </Box>
                     
-                    <Box sx={{ p: 2 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    {/* Content container with flex grow to fill remaining space */}
+                    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                      <Typography variant="h6" sx={{ 
+                        fontWeight: 'bold',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        lineHeight: 1.2,
+                        height: 48 // Fixed height for title
+                      }}>
                         {item.name} {item.model ? `- ${item.model}` : ''}
                       </Typography>
-                      {item.year && <Typography variant="body2" sx={{ color: 'gray' }}>{item.year}</Typography>}
-                      {item.brand && <Typography variant="body2" sx={{ color: 'gray' }}>{item.brand}</Typography>}
-                      <Typography variant="body1" sx={{ color: '#4caf50', fontWeight: 'bold', mt: 1 }}>
-                        {item.price}
+                      
+                      <Box sx={{ flexGrow: 1, mt: 1 }}>
+                        {item.year && <Typography variant="body2" sx={{ color: 'gray' }}>{item.year}</Typography>}
+                        {item.brand && <Typography variant="body2" sx={{ color: 'gray' }}>{item.brand}</Typography>}
+                        {item.type && <Typography variant="body2" sx={{ color: '#ffeb3b' }}>Type: {item.type}</Typography>}
+                      </Box>
+                      
+                      {/* Price at the bottom */}
+                      <Typography variant="body1" sx={{ 
+                        color: '#4caf50', 
+                        fontWeight: 'bold', 
+                        mt: 'auto',
+                        fontSize: '1.1rem'
+                      }}>
+                        {formatPrice(item.price)}
                       </Typography>
-                      {item.type && <Typography variant="body2" sx={{ color: '#ffeb3b' }}>Type: {item.type}</Typography>}
                     </Box>
                   </Paper>
                 </Grid>
