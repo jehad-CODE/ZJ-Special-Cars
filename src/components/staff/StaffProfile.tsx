@@ -205,7 +205,7 @@ const StaffProfile: React.FC = () => {
           textShadow: '0px 2px 3px rgba(0,0,0,0.3)'
         }}
       >
-        Edit Profile
+      
       </Typography>
       
       <Grid container spacing={isMobile ? 2 : 3}>
